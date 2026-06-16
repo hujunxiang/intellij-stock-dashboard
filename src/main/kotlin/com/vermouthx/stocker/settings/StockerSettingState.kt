@@ -6,7 +6,7 @@ import com.vermouthx.stocker.enums.StockerTableColumn
 
 class StockerSettingState {
     var version: String = ""
-    var refreshInterval: Long = 5
+    var refreshInterval: Long = 1
     var quoteProvider: StockerQuoteProvider = StockerQuoteProvider.SINA
     var cryptoQuoteProvider: StockerQuoteProvider = StockerQuoteProvider.SINA
     var quoteColorPattern: StockerQuoteColorPattern = StockerQuoteColorPattern.RED_UP_GREEN_DOWN
@@ -20,4 +20,9 @@ class StockerSettingState {
     var customStockNames: MutableMap<String, String> = mutableMapOf()
     var stockCostPrices: MutableMap<String, Double> = mutableMapOf()
     var stockHoldings: MutableMap<String, Int> = mutableMapOf()
+    var stockGroupNames: MutableList<String> = mutableListOf()
+    var stockGroupMap: MutableMap<String, MutableList<String>> = mutableMapOf()
+    var lastSelectedGroup: String = ""
+    var enabledMarkets: MutableList<String> = mutableListOf()
+    var marketsConfigured: Boolean = false // false = legacy (all enabled), true = use enabledMarkets
 }

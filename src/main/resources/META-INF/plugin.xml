@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>com.vermouthx.intellij-investor-dashboard</id>
-    <name>Stocker</name>
+    <name>StockerPlus</name>
     <vendor email="developer@nszihan.com" url="https://nszihan.com">Zihan Ma</vendor>
     <idea-version since-build="253"/>
     <resource-bundle>messages.StockerBundle</resource-bundle>
@@ -8,10 +8,10 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.vermouthx.stocker.settings.StockerSetting"/>
         <postStartupActivity implementation="com.vermouthx.stocker.activities.StockerStartupActivity"/>
-        <notificationGroup displayType="STICKY_BALLOON" id="Stocker" isLogByDefault="true"/>
-        <toolWindow id="Stocker" anchor="left" icon="/icons/logo.png" secondary="true"
+        <notificationGroup displayType="STICKY_BALLOON" id="StockerPlus" isLogByDefault="true"/>
+        <toolWindow id="StockerPlus" anchor="left" icon="/icons/logo.png" secondary="true"
                     factoryClass="com.vermouthx.stocker.views.windows.StockerToolWindow"/>
-        <applicationConfigurable parentId="tools" displayName="Stocker"
+        <applicationConfigurable parentId="tools" displayName="StockerPlus"
                                  id="com.vermouthx.stocker.views.windows.StockerSettingWindow"
                                  instance="com.vermouthx.stocker.views.windows.StockerSettingWindow"/>
     </extensions>
@@ -19,7 +19,7 @@
         <listener class="com.vermouthx.stocker.StockerAppManager$StockerProjectManagerListener" topic="com.intellij.openapi.project.ProjectManagerListener"/>
     </projectListeners>
     <actions>
-        <group id="com.vermouthx.stocker.actions.StockerActionGroup" text="Stocker" popup="true" icon="/icons/logo.png">
+        <group id="com.vermouthx.stocker.actions.StockerActionGroup" text="StockerPlus" popup="true" icon="/icons/logo.png">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
             <action class="com.vermouthx.stocker.actions.StockerStockSearchAction"
                     id="com.vermouthx.stocker.actions.StockerStockSearchAction"

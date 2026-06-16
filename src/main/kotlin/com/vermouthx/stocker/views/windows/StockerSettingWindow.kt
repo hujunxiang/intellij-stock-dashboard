@@ -10,6 +10,7 @@ import com.vermouthx.stocker.StockerBundle
 import com.vermouthx.stocker.enums.StockerQuoteColorPattern
 import com.vermouthx.stocker.enums.StockerQuoteProvider
 import com.vermouthx.stocker.enums.StockerTableColumn
+import com.vermouthx.stocker.enums.StockerMarketType
 import com.vermouthx.stocker.settings.StockerSetting
 import com.vermouthx.stocker.views.StockerTableView
 import javax.swing.JCheckBox
@@ -24,6 +25,7 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
     private var selectedCryptoProvider: StockerQuoteProvider = setting.cryptoQuoteProvider
     private var displayNameWithPinyin: Boolean = setting.displayNameWithPinyin
     private var languageOverride: String = setting.languageOverride
+    private var refreshInterval: Long = setting.refreshInterval
     private var showSymbol: Boolean = setting.isTableColumnVisible(StockerTableColumn.SYMBOL)
     private var showName: Boolean = setting.isTableColumnVisible(StockerTableColumn.NAME)
     private var showCurrent: Boolean = setting.isTableColumnVisible(StockerTableColumn.CURRENT)
@@ -37,6 +39,10 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
     private var showHoldings: Boolean = setting.isTableColumnVisible(StockerTableColumn.HOLDINGS)
     private var showNetProfit: Boolean = setting.isTableColumnVisible(StockerTableColumn.NET_PROFIT)
     private var showDailyProfit: Boolean = setting.isTableColumnVisible(StockerTableColumn.DAILY_PROFIT)
+    private var showAShare: Boolean = setting.isMarketEnabled(StockerMarketType.AShare)
+    private var showHKStocks: Boolean = setting.isMarketEnabled(StockerMarketType.HKStocks)
+    private var showUSStocks: Boolean = setting.isMarketEnabled(StockerMarketType.USStocks)
+    private var showCrypto: Boolean = setting.isMarketEnabled(StockerMarketType.Crypto)
 
     private var symbolCheckBox: JCheckBox? = null
     private var nameCheckBox: JCheckBox? = null
@@ -85,6 +91,43 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                         .widthGroup("comboboxes")
                         .comment(StockerBundle.message("settings.language.comment"))
                 }.layout(RowLayout.LABEL_ALIGNED)
+
+                row {
+                    label(StockerBundle.message("settings.refresh.interval"))
+                        .widthGroup("labels")
+                    comboBox((1L..10L).toList(), SimpleListCellRenderer.create { label, value, _ ->
+                        label.text = if (value != null) StockerBundle.message("settings.refresh.interval.seconds", value) else ""
+                    })
+                        .bindItem(
+                            { refreshInterval },
+                            { refreshInterval = it ?: 1L }
+                        )
+                        .widthGroup("comboboxes")
+                }.layout(RowLayout.LABEL_ALIGNED)
+
+                row {
+                    label(StockerBundle.message("settings.market.tabs"))
+                        .widthGroup("labels")
+                }.layout(RowLayout.LABEL_ALIGNED)
+
+                indent {
+                    row {
+                        checkBox(StockerBundle.message("settings.market.AShare"))
+                            .bindSelected(::showAShare.toMutableProperty())
+                    }
+                    row {
+                        checkBox(StockerBundle.message("settings.market.HKStocks"))
+                            .bindSelected(::showHKStocks.toMutableProperty())
+                    }
+                    row {
+                        checkBox(StockerBundle.message("settings.market.USStocks"))
+                            .bindSelected(::showUSStocks.toMutableProperty())
+                    }
+                    row {
+                        checkBox(StockerBundle.message("settings.market.Crypto"))
+                            .bindSelected(::showCrypto.toMutableProperty())
+                    }
+                }
             }
 
             group(StockerBundle.message("settings.group.data.provider")) {
@@ -270,6 +313,7 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 val cryptoProviderModified = selectedCryptoProvider != setting.cryptoQuoteProvider
                 val pinyinModified = displayNameWithPinyin != setting.displayNameWithPinyin
                 val languageModified = languageOverride != setting.languageOverride
+                val refreshIntervalModified = refreshInterval != setting.refreshInterval
 
                 setting.quoteProvider = selectedProvider
                 setting.cryptoQuoteProvider = selectedCryptoProvider
@@ -277,6 +321,7 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 setting.displayNameWithPinyin = displayNameWithPinyin
                 setting.visibleTableColumns = visibleColumns
                 setting.languageOverride = languageOverride
+                setting.refreshInterval = refreshInterval
 
                 if (columnsModified || languageModified) {
                     StockerTableView.refreshAllColumnVisibility()
@@ -284,7 +329,20 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 if (colorPatternModified) {
                     StockerTableView.refreshAllColorPatterns()
                 }
-                if (providerModified || cryptoProviderModified || pinyinModified || languageModified) {
+                val marketsModified = showAShare != setting.isMarketEnabled(StockerMarketType.AShare) ||
+                        showHKStocks != setting.isMarketEnabled(StockerMarketType.HKStocks) ||
+                        showUSStocks != setting.isMarketEnabled(StockerMarketType.USStocks) ||
+                        showCrypto != setting.isMarketEnabled(StockerMarketType.Crypto)
+
+                setting.setMarketEnabled(StockerMarketType.AShare, showAShare)
+                setting.setMarketEnabled(StockerMarketType.HKStocks, showHKStocks)
+                setting.setMarketEnabled(StockerMarketType.USStocks, showUSStocks)
+                setting.setMarketEnabled(StockerMarketType.Crypto, showCrypto)
+
+                if (marketsModified) {
+                    StockerToolWindow.rebuildTabs()
+                }
+                if (providerModified || cryptoProviderModified || pinyinModified || languageModified || refreshIntervalModified || marketsModified) {
                     refreshAllWindows()
                 }
             }
@@ -294,7 +352,12 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                         colorPattern != setting.quoteColorPattern ||
                         displayNameWithPinyin != setting.displayNameWithPinyin ||
                         languageOverride != setting.languageOverride ||
-                        buildVisibleColumns() != setting.visibleTableColumns
+                        refreshInterval != setting.refreshInterval ||
+                        buildVisibleColumns() != setting.visibleTableColumns ||
+                        showAShare != setting.isMarketEnabled(StockerMarketType.AShare) ||
+                        showHKStocks != setting.isMarketEnabled(StockerMarketType.HKStocks) ||
+                        showUSStocks != setting.isMarketEnabled(StockerMarketType.USStocks) ||
+                        showCrypto != setting.isMarketEnabled(StockerMarketType.Crypto)
             }
             onReset {
                 selectedProvider = setting.quoteProvider
@@ -302,6 +365,7 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 colorPattern = setting.quoteColorPattern
                 displayNameWithPinyin = setting.displayNameWithPinyin
                 languageOverride = setting.languageOverride
+                refreshInterval = setting.refreshInterval
                 showSymbol = setting.isTableColumnVisible(StockerTableColumn.SYMBOL)
                 showName = setting.isTableColumnVisible(StockerTableColumn.NAME)
                 showCurrent = setting.isTableColumnVisible(StockerTableColumn.CURRENT)
@@ -315,6 +379,10 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 showHoldings = setting.isTableColumnVisible(StockerTableColumn.HOLDINGS)
                 showNetProfit = setting.isTableColumnVisible(StockerTableColumn.NET_PROFIT)
                 showDailyProfit = setting.isTableColumnVisible(StockerTableColumn.DAILY_PROFIT)
+                showAShare = setting.isMarketEnabled(StockerMarketType.AShare)
+                showHKStocks = setting.isMarketEnabled(StockerMarketType.HKStocks)
+                showUSStocks = setting.isMarketEnabled(StockerMarketType.USStocks)
+                showCrypto = setting.isMarketEnabled(StockerMarketType.Crypto)
                 columnWarningLabel?.isVisible = false
             }
         }

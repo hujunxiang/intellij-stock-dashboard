@@ -25,20 +25,20 @@ class StockerSimpleToolWindow : SimpleToolWindowPanel(true) {
         val actionGroup = DefaultActionGroup(leftActions)
         val actionToolbar = actionManager.createActionToolbar(ActionPlaces.TOOLWINDOW_CONTENT, actionGroup, true)
         actionToolbar.targetComponent = tableView.component
-        
+
         val rightActionGroup = DefaultActionGroup().apply {
             StockerSettingAction::class.qualifiedName?.let { actionManager.getAction(it) }?.let { add(it) }
         }
         val rightActionToolbar = actionManager.createActionToolbar(ActionPlaces.TOOLWINDOW_CONTENT, rightActionGroup, true)
         rightActionToolbar.targetComponent = tableView.component
-        
+
         val toolbarPanel = com.intellij.ui.components.panels.HorizontalLayout(0).let { layout ->
             javax.swing.JPanel(java.awt.BorderLayout()).apply {
                 add(actionToolbar.component, java.awt.BorderLayout.WEST)
                 add(rightActionToolbar.component, java.awt.BorderLayout.EAST)
             }
         }
-        
+
         this.toolbar = toolbarPanel
         setContent(tableView.component)
     }

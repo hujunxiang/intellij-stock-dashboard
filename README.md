@@ -1,6 +1,6 @@
 <h1 align="center">
-<img src="https://raw.githubusercontent.com/WhiteVermouth/intellij-investor-dashboard/master/screenshots/Logo.png" width="100" alt="icon"><br>
-Stocker
+<img src="./screenshots/Logo.png" width="100" alt="icon"><br>
+StockerPlus
 </h1>
 
 <p align="center">
@@ -14,8 +14,9 @@ Stocker is a JetBrains IDE extension dashboard for investors to track real-time 
 <img src="https://img.shields.io/github/license/WhiteVermouth/intellij-investor-dashboard" alt="License" />
 </p>
 <p align="center">
-<img src="https://raw.githubusercontent.com/WhiteVermouth/intellij-investor-dashboard/master/screenshots/Dashboard.png" alt="Dashboard"/>
+<img src="./screenshots/Dashboard.png" alt="Dashboard"/>
 </p>
+
 
 ## ✨ Features
 

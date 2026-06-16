@@ -1,80 +1,74 @@
-# IntelliJ Investor Dashboard Agent Guide
+# Stocker 插件 — Agent 指南
 
-## Project Overview
+## 常用命令
 
-- This repository contains the `Stocker` JetBrains plugin (`com.vermouthx.intellij-investor-dashboard`).
-- It is a mixed Kotlin/Java codebase:
-  - Kotlin holds most application logic, actions, settings, dialogs, notifications, and tool window wiring.
-  - Java holds table rendering, table view behavior, message-bus listeners, and some utility classes.
-- The plugin targets IntelliJ Platform `2025.3` (built against the unified IntelliJ IDEA / `IU` distribution, since Community `IC` is no longer published as of 253) via the `org.jetbrains.intellij.platform` Gradle plugin.
+| 任务 | 命令 |
+|---|---|
+| 编译检查 | `./gradlew compileKotlin compileJava` |
+| 运行全部单元测试 | `./gradlew test` |
+| 运行单个测试类 | `./gradlew test --tests "com.vermouthx.stocker.utils.StockerQuoteParserTest"` |
+| 完整构建 + 打包 | `./gradlew build` |
+| 插件兼容性验证 | `./gradlew verifyPlugin` |
+| 启动沙箱 IDE 手动测试 | `./gradlew runIdeLatest` |
 
-## Repository Layout
+工具链：JDK 21、Kotlin 2.2.21、Gradle wrapper。始终使用 `./gradlew`。
 
-- `src/main/kotlin/com/vermouthx/stocker`
-  - `actions`: toolbar and Tools menu actions
-  - `activities`: startup hooks
-  - `notifications`: welcome and release-note notifications
-  - `settings`: persistent plugin settings
-  - `views/dialogs`, `views/windows`: UI entry points
-  - `utils`: HTTP, parser, and helper logic
-- `src/main/java/com/vermouthx/stocker`
-  - `views`: `StockerTableView`
-  - `components`: table models and renderers
-  - `listeners`: message-bus listeners for quote update/reload/delete
-- `src/main/resources`
-  - `META-INF/plugin.xml`: plugin registration and action declarations
-  - `messages/*.properties`: localized strings
-  - `icons/`: plugin assets
-- `src/test/kotlin/com/vermouthx/stocker`
-  - JUnit 5 unit tests mirroring the main package layout (e.g. `utils`, `entities`, `enums`)
+## 架构
 
-## Working Rules
+**Stocker** — JetBrains 插件（`com.vermouthx.intellij-investor-dashboard`）。Kotlin/Java 混合代码库，目标平台 IntelliJ 2025.3+（IU 发行版；IC 已停止发布）。
 
-- Preserve the existing mixed-language structure. Do not move Java table/view classes into Kotlin unless the task explicitly requires a broader refactor.
-- Prefer small, surgical fixes. This plugin has a lot of event-driven UI behavior; broad rewrites are risky.
-- When changing user-visible text, check whether it belongs in `messages/StockerBundle*.properties` instead of hardcoding it.
-- When changing plugin wiring, actions, startup behavior, settings registration, or notification groups, verify `src/main/resources/META-INF/plugin.xml`.
-- When changing tool window, table, or popup behavior, review both sides of the flow:
-  - UI event handling in `views` / `components`
-  - message-bus update/delete/reload listeners in `listeners`
-- When changing settings-backed behavior, confirm both persistence and immediate UI refresh behavior.
+### 数据流
 
-## Verification
+1. `StockerApp` 每个项目运行一个 `ScheduledExecutorService`，以配置的刷新间隔在一个合并任务中拉取所有市场数据。
+2. `StockerQuoteHttpUtil` → `StockerQuoteParser` → `StockerQuote` 实体。HTTP 通过 `StockerHttpClientPool`（Apache `PoolingHttpClientConnectionManager`，最大 20 连接）。新浪 API 需要 `Referer: https://finance.sina.com.cn` 请求头。
+3. 结果通过 IntelliJ **消息总线** 发布：5 个市场（ALL/CN/HK/US/Crypto）× 3 种事件类型（update/reload/delete）= 15 个 topic，定义在 `listeners/` 下 Java 接口的 `Topic<>` 字段中。
+4. Java 监听器（`StockerQuoteUpdateListener` 等）对 Swing `StockerTableModel` 执行单元格级别的差异更新。
+5. `StockerSetting` — 应用级 `PersistentStateComponent`，存储在 `stockerplus-config.xml`。保存自选股列表、自定义名称、成本价、持仓量、配色方案、可见列、刷新间隔、语言覆盖。
 
-- Default verification for code changes:
-  - `./gradlew compileKotlin compileJava`
-- Run the unit tests when touching logic that has coverage (parser, settings/entity logic, enums, table-model utils):
-  - `./gradlew test`
-- For broader plugin or packaging changes, consider:
-  - `./gradlew build`
-- If the change affects UI behavior, context menus, notifications, actions, or settings application, note whether the fix was only compile-verified or manually exercised in IntelliJ.
+### 语言边界
 
-## Testing
+- **Kotlin**（`src/main/kotlin/…`）：actions、activities、settings、dialogs、tool windows、HTTP/解析工具、entities、enums、notifications、`StockerApp`、`StockerAppManager`、`StockerBundle`
+- **Java**（`src/main/java/…`）：`StockerTableView`、`StockerTableModel`、单元格渲染器、消息总线 notifiers/listeners、`StockerTableModelUtil`、`StockerActionUtil`、`StockerSortState`、`StockerStockOperation`
 
-- Tests are plain JUnit 5 (`kotlin("test-junit5")`, `useJUnitPlatform()`); there is no IntelliJ test-fixture setup.
-- Because of that, only **platform-free** logic is unit-testable today: anything reaching `ApplicationManager`/services, the message bus, or `StockerBundle` (localization via `DynamicBundle`, including any `*.title` getter) will not run under a plain unit test.
-  - Covered today: `StockerQuoteParser`, `StockerTableModelUtil`, `StockerQuote`, `StockerPinyinUtil`, and the non-localized parts of `StockerTableColumn`.
-  - Out of scope until platform test fixtures are added: `StockerSetting`, the message-bus listeners, `StockerActionUtil`, and anything depending on localized titles.
-- `StockerQuoteParser` extracts every field by hard-coded array index against undocumented Sina/Tencent response formats. Treat its tests as the contract: build fixtures with explicit index-to-field mapping and update them in lockstep with any parser change.
-- To enable tests for platform-dependent code, add the IntelliJ Platform test framework dependency (`testFramework(TestFrameworkType.Platform)`) — a separate, heavier step not yet wired up.
+除非明确要求，不要将 Java 表格/视图/监听器类迁移到 Kotlin。
 
-## Release And Versioning
+## 约定
 
-- `pluginVersion` lives in `gradle.properties`.
-- `build.gradle.kts` uses `CHANGELOG.md` as the source for plugin change notes shown on release.
-- `StockerNotification.kt` contains the in-product release note content shown to users after upgrade.
-- When bumping the plugin version, you must update these files together in the same change:
-  - `gradle.properties`
-  - `CHANGELOG.md`
-  - `src/main/kotlin/com/vermouthx/stocker/notifications/StockerNotification.kt`
-- Publishing is **tag-driven** via `.github/workflows/build.yml`:
-  - Pushing a tag matching `v1.*` triggers the release job, which builds the plugin, creates a GitHub Release with the `.zip` artifact, and runs `./gradlew publishPlugin` to the JetBrains Marketplace (using the `JETBRAINS_TOKEN` repo secret).
-  - Typical flow after the version bump: verify (`./gradlew test build`), commit, then `git tag vX.Y.Z && git push origin master --tags`.
-  - Manual fallback: `./gradlew publishPlugin -Djetbrains.token=<token>`.
+- **用户可见文本** 必须通过 `StockerBundle.message(key)` → `messages/StockerBundle.properties` / `StockerBundle_zh_CN.properties`。保持两个语言包同步。
+- **插件注册变更**（actions、services、startup、notification groups、tool window）需要同步更新 `src/main/resources/META-INF/plugin.xml`。
+- **表格/弹出菜单变更** 必须同时检查两侧：UI 事件处理（`views`/`components`）和消息总线监听器（`listeners/`）。
+- **`DefaultTableModel`** 已自动触发表格事件——不要重复触发手动通知。
+- **`StockerQuote`** 相等性仅按 `code` 判定（非全部字段）；处理差异更新时务必注意。
+- **`StockerTableColumn`** 在设置中以 enum `name` 字符串持久化；`visibleTableColumns` 有从旧本地化标题迁移的路径（`migrateLocalizedTitle()`）。
+- **`StockerQuoteProvider.TENCENT`** 不支持 Crypto（`providerPrefixMap` 中无前缀）；仅新浪提供加密货币行情。
 
-## Common Pitfalls
+## 测试
 
-- Right-click or popup-menu behavior can break if selection/focus changes are not accounted for.
-- `DefaultTableModel` already fires table events for some operations; avoid duplicate manual notifications unless required.
-- Localization regressions are easy to introduce when labels/descriptions exist in both action declarations and runtime UI code.
-- Settings changes should not silently require restart unless the behavior is explicitly designed that way.
+纯 JUnit 5，无 IntelliJ 平台测试夹具。仅 **不依赖平台** 的逻辑可测试。
+
+| 可测试（无平台依赖） | 不可测试（需要平台） |
+|---|---|
+| `StockerQuoteParser`、`StockerTableModelUtil`、`StockerQuote`、`StockerPinyinUtil`、`StockerTableColumn` 非本地化部分 | `StockerSetting`、消息总线监听器、`StockerActionUtil`、任何使用 `StockerBundle.message()` 或 `*.title` getter 的代码 |
+
+**`StockerQuoteParser`** 按硬编码数组索引解析未文档化的新浪/腾讯响应格式。其测试即契约——修改解析器时必须同步更新测试夹具。
+
+如需添加平台测试支持：添加 `testFramework(TestFrameworkType.Platform)` 依赖（尚未配置）。
+
+## 发布
+
+`gradle.properties` 中的 `pluginVersion` 是唯一的版本真相来源。版本升级时，**三处必须同步更新**并在一次提交中完成：
+
+1. `gradle.properties` → `pluginVersion=X.Y.Z`
+2. `CHANGELOG.md` → 新增 `## X.Y.Z` 章节，使用 emoji 前缀标题（`### ✨ New Features`、`### 🐛 Bug Fixes`、`### 🔧 Maintenance`），条目采用 `English / 中文` 双语格式。`org.jetbrains.changelog` Gradle 插件会自动提取。
+3. `src/main/kotlin/…/notifications/StockerNotification.kt` → 更新 `buildReleaseNote()` 正文（`zh_CN` 和英文 HTML 均需修改）。版本号在运行时来自 `StockerMeta.currentVersion`，只需编辑描述文本。
+
+然后：`./gradlew test build` → 提交 → `git tag vX.Y.Z && git push origin master --tags`
+
+CI（`.github/workflows/build.yml`）在 `v1.*` tag 时触发：构建插件 → 带 `.zip` 的 GitHub Release → `publishPlugin` 发布到 JetBrains Marketplace（`JETBRAINS_TOKEN` secret）。手动备用：`./gradlew publishPlugin -Djetbrains.token=<token>`。
+
+## 常见陷阱
+
+- 右键弹出菜单操作可能在执行前丢失选中行——务必提前捕获选中状态。
+- `StockerBundle` 和 `StockerNotification.isChinese()` 均遵循 `StockerSetting.languageOverride`（空 = 跟随系统、`"zh_CN"`、`"en"`）。通知 HTML 在显示时构建，不会预缓存。
+- `StockerAppManager` 维护 `Project → StockerApp` 映射；`StockerProjectManagerListener` 在项目关闭时调用 `shutdownThenClear()` 以防止执行器服务泄漏。
+- 设置变更必须立即生效（不要求静默重启），除非明确设计为需要重启。

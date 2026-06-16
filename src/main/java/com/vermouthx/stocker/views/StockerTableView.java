@@ -716,6 +716,13 @@ public class StockerTableView implements Disposable {
         }
     }
 
+    public void clearTable() {
+        synchronized (tbModel) {
+            tbModel.setRowCount(0);
+        }
+        clearSortState();
+    }
+
     private void sortByColumn(int column) {
         String columnName = tbBody.getColumnName(column);
 

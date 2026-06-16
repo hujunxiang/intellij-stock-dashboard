@@ -11,6 +11,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
 import com.vermouthx.stocker.StockerAppManager
+import com.vermouthx.stocker.StockerBundle
 import com.vermouthx.stocker.entities.StockerSuggestion
 import com.vermouthx.stocker.enums.StockerMarketType
 import com.vermouthx.stocker.enums.StockerStockOperation
@@ -43,6 +44,7 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
     private var searchTask: ScheduledFuture<*>? = null
     private var isLoading: Boolean = false
     private var searchMode: SearchMode = SearchMode.STOCKS
+    private var selectedGroup: String? = null
 
     private enum class SearchMode(val displayName: String) {
         STOCKS("Stocks (CN/HK/US)"),
@@ -125,6 +127,27 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
             }
         }
         modePanel.add(modeComboBox)
+
+        // Group selector
+        modePanel.add(javax.swing.Box.createHorizontalStrut(16))
+        modePanel.add(JLabel(StockerBundle.message("manage.group.label")))
+        val groupNames = setting.stockGroupNames.toMutableList()
+        val groupComboBox = ComboBox(groupNames.toTypedArray())
+        if (setting.lastSelectedGroup.isNotEmpty() && groupNames.contains(setting.lastSelectedGroup)) {
+            groupComboBox.selectedIndex = groupNames.indexOf(setting.lastSelectedGroup)
+            selectedGroup = setting.lastSelectedGroup
+        } else if (groupNames.isNotEmpty()) {
+            groupComboBox.selectedIndex = 0
+            selectedGroup = groupNames[0]
+        }
+        groupComboBox.addActionListener {
+            val idx = groupComboBox.selectedIndex
+            if (idx >= 0 && idx < groupNames.size) {
+                selectedGroup = groupNames[idx]
+                setting.lastSelectedGroup = groupNames[idx]
+            }
+        }
+        modePanel.add(groupComboBox)
 
         searchTextField.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(e: DocumentEvent) {
@@ -240,7 +263,8 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
                                 myApplication.shutdownThenClear()
                                 when (StockerStockOperation.mapOf(actionButton.text)) {
                                     StockerStockOperation.STOCK_ADD -> {
-                                        StockerActionUtil.addStock(suggestion.market, suggestion, project)
+                                        val groupName = selectedGroup ?: setting.lastSelectedGroup.takeIf { it.isNotEmpty() }
+                                        StockerActionUtil.addStock(suggestion.market, suggestion, project, groupName)
                                         actionButton.text = StockerStockOperation.STOCK_DELETE.operation
                                     }
 

@@ -11,7 +11,7 @@ import com.vermouthx.stocker.listeners.StockerQuoteDeleteNotifier;
 import com.vermouthx.stocker.settings.StockerSetting;
 
 public class StockerActionUtil {
-    public static boolean addStock(StockerMarketType market, StockerSuggestion suggest, Project project) {
+    public static boolean addStock(StockerMarketType market, StockerSuggestion suggest, Project project, String groupName) {
         StockerSetting setting = StockerSetting.Companion.getInstance();
         String code = suggest.getCode();
         String fullName = suggest.getName();
@@ -20,16 +20,25 @@ public class StockerActionUtil {
                 : setting.getQuoteProvider();
         if (!setting.containsCode(code)) {
             if (StockerQuoteHttpUtil.INSTANCE.validateCode(market, provider, code)) {
+                boolean added = false;
                 switch (market) {
                     case AShare:
-                        return setting.getAShareList().add(code);
+                        added = setting.getAShareList().add(code);
+                        break;
                     case HKStocks:
-                        return setting.getHkStocksList().add(code);
+                        added = setting.getHkStocksList().add(code);
+                        break;
                     case USStocks:
-                        return setting.getUsStocksList().add(code);
+                        added = setting.getUsStocksList().add(code);
+                        break;
                     case Crypto:
-                        return setting.getCryptoList().add(code);
+                        added = setting.getCryptoList().add(code);
+                        break;
                 }
+                if (added && groupName != null && !groupName.isEmpty()) {
+                    setting.assignStockToGroup(code, groupName);
+                }
+                return added;
             } else {
                 String errMessage = fullName + " is not supported.";
                 String errTitle = "Not Supported Stock";
