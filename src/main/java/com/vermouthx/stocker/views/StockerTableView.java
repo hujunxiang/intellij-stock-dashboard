@@ -94,7 +94,7 @@ public class StockerTableView implements Disposable {
         tableViews.remove(this);
 
         // Clear data structures to help with garbage collection
-        indices.clear();
+        indices = new ArrayList<>();
         if (sortBackupData != null) {
             sortBackupData.clear();
             sortBackupData = null;
@@ -108,7 +108,7 @@ public class StockerTableView implements Disposable {
 
     public void syncIndices(List<StockerQuote> indices) {
         SwingUtilities.invokeLater(() -> {
-            this.indices = indices;
+            this.indices = new ArrayList<>(indices);
             StockerSetting setting = StockerSetting.Companion.getInstance();
 
             boolean shouldRefresh = cbIndex.getItemCount() != indices.size();

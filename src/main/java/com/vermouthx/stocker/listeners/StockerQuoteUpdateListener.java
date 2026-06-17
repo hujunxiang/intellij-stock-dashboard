@@ -1,5 +1,9 @@
 package com.vermouthx.stocker.listeners;
 
+import com.intellij.notification.NotificationGroupManager;
+import com.intellij.notification.NotificationType;
+import com.intellij.openapi.util.IconLoader;
+import com.vermouthx.stocker.StockerBundle;
 import com.vermouthx.stocker.entities.StockerQuote;
 import com.vermouthx.stocker.settings.StockerSetting;
 import com.vermouthx.stocker.utils.StockerTableModelUtil;
@@ -15,6 +19,7 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     private final StockerTableView myTableView;
     private volatile String groupFilter = null; // null = show all
     private volatile List<StockerQuote> storedQuotes = new CopyOnWriteArrayList<>();
+    private final java.util.Set<String> notifiedCodes = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public void setGroupFilter(String groupFilter) {
         this.groupFilter = (groupFilter != null && !groupFilter.isEmpty()) ? groupFilter : null;
@@ -63,6 +68,8 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     public void syncQuotes(List<StockerQuote> quotes, int size) {
         // Store all quotes atomically (replace, don't clear+add)
         storedQuotes = new CopyOnWriteArrayList<>(quotes);
+        // Clear notified codes on each new data cycle
+        notifiedCodes.clear();
         applyGroupFilter(quotes);
     }
 
@@ -170,6 +177,75 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
                 }
             }
         });
+
+        // Check thresholds and notify
+        checkThresholdAlerts(filteredQuotes, setting);
+    }
+
+    private void checkThresholdAlerts(List<StockerQuote> quotes, StockerSetting setting) {
+        int rise = setting.getRiseThreshold();
+        int fall = setting.getFallThreshold();
+        if (rise == 0 && fall == 0) return;
+
+        // Determine colors based on color pattern setting
+        String riseColor;
+        String fallColor;
+        switch (setting.getQuoteColorPattern()) {
+            case GREEN_UP_RED_DOWN:
+                riseColor = "#008000"; // green
+                fallColor = "#CC0000"; // red
+                break;
+            case NONE:
+                riseColor = "#808080"; // gray
+                fallColor = "#808080";
+                break;
+            default: // RED_UP_GREEN_DOWN
+                riseColor = "#CC0000"; // red
+                fallColor = "#008000"; // green
+                break;
+        }
+
+        java.util.List<String> riseItems = new java.util.ArrayList<>();
+        java.util.List<String> fallItems = new java.util.ArrayList<>();
+
+        for (StockerQuote quote : quotes) {
+            String code = quote.getCode();
+            if (notifiedCodes.contains(code)) continue;
+
+            double pct = quote.getPercentage();
+            if (rise > 0 && pct >= rise) {
+                notifiedCodes.add(code);
+                riseItems.add(String.format("<span style='color:%s'>&#x25B2; %s <b>+%s%%</b></span>",
+                        riseColor, quote.getName(), String.format("%.2f", pct)));
+            } else if (fall < 0 && pct <= fall) {
+                notifiedCodes.add(code);
+                fallItems.add(String.format("<span style='color:%s'>&#x25BC; %s <b>%s%%</b></span>",
+                        fallColor, quote.getName(), String.format("%.2f", pct)));
+            }
+        }
+
+        if (riseItems.isEmpty() && fallItems.isEmpty()) return;
+
+        StringBuilder html = new StringBuilder("<html><body style='width:280px;line-height:1.6'>");
+        for (String item : riseItems) html.append(item).append("<br>");
+        for (String item : fallItems) html.append(item).append("<br>");
+        html.append("</body></html>");
+
+        String title = StockerBundle.message("alert.title");
+
+        try {
+            com.intellij.notification.Notification notification = NotificationGroupManager.getInstance()
+                    .getNotificationGroup("StockerPlus")
+                    .createNotification(title, html.toString(), NotificationType.WARNING)
+                    .setIcon(IconLoader.getIcon("/icons/logo.png", getClass()));
+            notification.notify(null);
+
+            // Auto-dismiss after 1 second
+            new javax.swing.Timer(1000, e -> {
+                try { notification.expire(); } catch (Exception ignored) {}
+            }) {{ setRepeats(false); }}.start();
+        } catch (Exception ignored) {
+        }
     }
 
     @Override

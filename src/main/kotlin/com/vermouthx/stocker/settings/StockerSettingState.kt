@@ -25,4 +25,6 @@ class StockerSettingState {
     var lastSelectedGroup: String = ""
     var enabledMarkets: MutableList<String> = mutableListOf()
     var marketsConfigured: Boolean = false // false = legacy (all enabled), true = use enabledMarkets
+    var riseThreshold: Int = 0 // 0 = disabled, 1-10 = alert when % change >= threshold
+    var fallThreshold: Int = 0 // 0 = disabled, -1 to -10 = alert when % change <= threshold
 }

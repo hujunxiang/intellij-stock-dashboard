@@ -89,6 +89,20 @@ class StockerSetting : PersistentStateComponent<StockerSettingState> {
             log.info("StockerPlus refresh interval set to $value")
         }
 
+    var riseThreshold: Int
+        get() = myState.riseThreshold
+        set(value) {
+            myState.riseThreshold = value
+            log.info("StockerPlus rise threshold set to $value")
+        }
+
+    var fallThreshold: Int
+        get() = myState.fallThreshold
+        set(value) {
+            myState.fallThreshold = value
+            log.info("StockerPlus fall threshold set to $value")
+        }
+
     var aShareList: MutableList<String>
         get() = myState.aShareList
         set(value) {

@@ -26,6 +26,8 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
     private var displayNameWithPinyin: Boolean = setting.displayNameWithPinyin
     private var languageOverride: String = setting.languageOverride
     private var refreshInterval: Long = setting.refreshInterval
+    private var riseThreshold: Int = setting.riseThreshold
+    private var fallThreshold: Int = setting.fallThreshold
     private var showSymbol: Boolean = setting.isTableColumnVisible(StockerTableColumn.SYMBOL)
     private var showName: Boolean = setting.isTableColumnVisible(StockerTableColumn.NAME)
     private var showCurrent: Boolean = setting.isTableColumnVisible(StockerTableColumn.CURRENT)
@@ -101,6 +103,40 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                         .bindItem(
                             { refreshInterval },
                             { refreshInterval = it ?: 1L }
+                        )
+                        .widthGroup("comboboxes")
+                }.layout(RowLayout.LABEL_ALIGNED)
+
+                row {
+                    label(StockerBundle.message("settings.alert.rise"))
+                        .widthGroup("labels")
+                    comboBox(listOf(0) + (1..10).toList(), SimpleListCellRenderer.create { label, value, _ ->
+                        label.text = if (value != null && value > 0) {
+                            StockerBundle.message("settings.alert.rise.value", value)
+                        } else {
+                            StockerBundle.message("settings.alert.rise.disabled")
+                        }
+                    })
+                        .bindItem(
+                            { riseThreshold },
+                            { riseThreshold = it ?: 0 }
+                        )
+                        .widthGroup("comboboxes")
+                }.layout(RowLayout.LABEL_ALIGNED)
+
+                row {
+                    label(StockerBundle.message("settings.alert.fall"))
+                        .widthGroup("labels")
+                    comboBox(listOf(0) + (-1 downTo -10).toList(), SimpleListCellRenderer.create { label, value, _ ->
+                        label.text = if (value != null && value < 0) {
+                            StockerBundle.message("settings.alert.fall.value", value)
+                        } else {
+                            StockerBundle.message("settings.alert.fall.disabled")
+                        }
+                    })
+                        .bindItem(
+                            { fallThreshold },
+                            { fallThreshold = it ?: 0 }
                         )
                         .widthGroup("comboboxes")
                 }.layout(RowLayout.LABEL_ALIGNED)
@@ -322,6 +358,8 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 setting.visibleTableColumns = visibleColumns
                 setting.languageOverride = languageOverride
                 setting.refreshInterval = refreshInterval
+                setting.riseThreshold = riseThreshold
+                setting.fallThreshold = fallThreshold
 
                 if (columnsModified || languageModified) {
                     StockerTableView.refreshAllColumnVisibility()
@@ -353,6 +391,8 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                         displayNameWithPinyin != setting.displayNameWithPinyin ||
                         languageOverride != setting.languageOverride ||
                         refreshInterval != setting.refreshInterval ||
+                        riseThreshold != setting.riseThreshold ||
+                        fallThreshold != setting.fallThreshold ||
                         buildVisibleColumns() != setting.visibleTableColumns ||
                         showAShare != setting.isMarketEnabled(StockerMarketType.AShare) ||
                         showHKStocks != setting.isMarketEnabled(StockerMarketType.HKStocks) ||
@@ -366,6 +406,8 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 displayNameWithPinyin = setting.displayNameWithPinyin
                 languageOverride = setting.languageOverride
                 refreshInterval = setting.refreshInterval
+                riseThreshold = setting.riseThreshold
+                fallThreshold = setting.fallThreshold
                 showSymbol = setting.isTableColumnVisible(StockerTableColumn.SYMBOL)
                 showName = setting.isTableColumnVisible(StockerTableColumn.NAME)
                 showCurrent = setting.isTableColumnVisible(StockerTableColumn.CURRENT)
