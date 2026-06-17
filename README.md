@@ -27,8 +27,12 @@ Stocker is a JetBrains IDE extension dashboard for investors to track real-time 
 - 🪙 **Cryptocurrency Support** - Monitor crypto assets alongside traditional securities
 - 🎯 **Custom Stock Names** - Set custom names for your favorite stocks
 - 🔍 **Smart Search** - Quickly find and add stocks with intelligent search dialog
-- 📋 **Batch Operations** - Manage multiple stocks at once with batch delete and reorder
+- 📋 **Batch Operations** - Manage multiple stocks at once with batch add and delete and reorder
 - 💾 **Persistent Settings** - Your preferences and watchlist are saved across IDE sessions
+- 🌐 **F10 Stock Detail** - Open stock detail page in browser with F10 key
+- 📦 **Stock Groups Operations** - Manage stock groups
+
+
 
 ## 📊 Supported Markets
 
@@ -41,13 +45,13 @@ Stocker is a JetBrains IDE extension dashboard for investors to track real-time 
 
 1. **Install the Plugin**
    - Open `Settings/Preferences` → `Plugins` → `Marketplace`
-   - Search for **Stocker** and click `Install`
+   - Search for **StockerPlus** and click `Install`
 
-   ![Install](https://raw.githubusercontent.com/WhiteVermouth/intellij-investor-dashboard/master/screenshots/Install.png)
+   ![Install](./screenshots/Install.png)
 
-2. **Open Stocker Tool Window**
-   - Find the **Stocker** tool window in the left or right sidebar
-   - Click to open the dashboard
+2. **Open StockerPlus Tool Window**
+   - Find the **StockerPlus** tool window in the left or right sidebar
+     - Click to open the dashboard
 
 3. **Add Your Stocks**
    - Click the **Add Favorite Stocks** button (🔍 search icon)
@@ -55,7 +59,7 @@ Stocker is a JetBrains IDE extension dashboard for investors to track real-time 
    - Select and add to your watchlist
 
 4. **Customize Settings**
-   - Go to `Settings/Preferences` → `Tools` → `Stocker`
+   - Go to `Settings/Preferences` → `Tools` → `StockerPlus`
    - Configure color patterns, display columns, pinyin mode, and more
 
 5. **Start Tracking**
@@ -67,16 +71,11 @@ Stocker is a JetBrains IDE extension dashboard for investors to track real-time 
 - **IDE Version**: IntelliJ IDEA 2025.3+ (and other JetBrains IDEs)
 - **Platforms**: Windows, macOS, Linux
 
-## 📖 Documentation
-
-- **Tutorial**: [Getting Started Guide](https://www.vermouthx.com/posts/2021/stocker)
-- **Changelog**: [View Release Notes](https://github.com/WhiteVermouth/intellij-investor-dashboard/blob/master/CHANGELOG.md)
-- **Issues**: [Report Bugs or Request Features](https://github.com/WhiteVermouth/intellij-investor-dashboard/issues)
 
 ## 📄 License
 
-[Apache-2.0 License](https://raw.githubusercontent.com/WhiteVermouth/intellij-investor-dashboard/master/LICENSE)
+[Apache-2.0 License](https://github.com/hujunxiang/intellij-stock-dashboard/blob/master/LICENSE)
 
 ## 💖 Donation
 
-If you like this plugin, you can [buy me a cup of coffee](https://www.buymeacoffee.com/nszihan). Thank you!
+If you like this plugin, you can star it on GitHub. Thank you!

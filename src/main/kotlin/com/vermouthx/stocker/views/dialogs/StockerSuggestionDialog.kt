@@ -18,6 +18,7 @@ import com.vermouthx.stocker.enums.StockerStockOperation
 import com.vermouthx.stocker.settings.StockerSetting
 import com.vermouthx.stocker.utils.StockerActionUtil
 import com.vermouthx.stocker.utils.StockerPinyinUtil
+import com.vermouthx.stocker.utils.StockerQuoteHttpUtil
 import com.vermouthx.stocker.utils.StockerSuggestHttpUtil
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -45,6 +46,15 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
     private var isLoading: Boolean = false
     private var searchMode: SearchMode = SearchMode.STOCKS
     private var selectedGroup: String? = null
+    private var batchResults: List<BatchResult>? = null
+
+    private data class BatchResult(
+        val rawCode: String,
+        val market: StockerMarketType?,
+        val normalizedCode: String,
+        val success: Boolean,
+        val message: String
+    )
 
     private enum class SearchMode(val displayName: String) {
         STOCKS("Stocks (CN/HK/US)"),
@@ -65,16 +75,33 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
         val performSearch = { text: String ->
             // Cancel any pending search task
             searchTask?.cancel(false)
-            
+
             if (text.isEmpty()) {
                 isLoading = false
                 suggestions = emptyList()
+                batchResults = null
                 SwingUtilities.invokeLater { refreshScrollPane(scrollPane) }
+            } else if (isBatchInput(text)) {
+                // Batch import mode
+                isLoading = true
+                batchResults = null
+                suggestions = emptyList()
+                SwingUtilities.invokeLater { refreshScrollPane(scrollPane) }
+
+                searchTask = service.schedule({
+                    val results = processBatchImport(text)
+                    SwingUtilities.invokeLater {
+                        isLoading = false
+                        batchResults = results
+                        refreshScrollPane(scrollPane)
+                    }
+                }, 300, TimeUnit.MILLISECONDS)
             } else {
                 // Show loading state immediately
                 isLoading = true
+                batchResults = null
                 SwingUtilities.invokeLater { refreshScrollPane(scrollPane) }
-                
+
                 // Debounce: schedule search after 300ms delay
                 searchTask = service.schedule({
                     try {
@@ -88,10 +115,10 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
                                 StockerMarketType.USStocks
                             )
                         }
-                        
+
                         // Fetch filtered suggestions
                         val filteredSuggestions = StockerSuggestHttpUtil.suggest(text, provider, marketTypeFilter)
-                        
+
                         // Update UI on EDT
                         SwingUtilities.invokeLater {
                             isLoading = false
@@ -191,13 +218,124 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
         super.dispose()
     }
 
+    private fun isBatchInput(text: String): Boolean {
+        // Contains commas → definitely batch
+        if (text.contains(",")) return true
+        // Contains spaces and each token looks like a stock code → batch
+        val tokens = text.trim().split("\\s+".toRegex())
+        if (tokens.size >= 2) {
+            val codePattern = Regex("(?i)^(sh|sz|bj)?\\d{5,6}$|^[A-Z]{2,6}(USD|USDT)$")
+            return tokens.all { codePattern.matches(it.trim()) }
+        }
+        return false
+    }
+
+    private fun parseBatchCodes(text: String): List<String> {
+        // Split by commas or spaces
+        return text.trim().split("[,\\s]+".toRegex())
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    }
+
+    private fun normalizeCode(raw: String): Pair<StockerMarketType, String> {
+        val upper = raw.uppercase()
+        return when {
+            upper.startsWith("SH") -> StockerMarketType.AShare to upper
+            upper.startsWith("SZ") -> StockerMarketType.AShare to upper
+            upper.startsWith("BJ") -> StockerMarketType.AShare to upper
+            upper.matches(Regex("^\\d{6}$")) -> {
+                // 6-digit code without prefix → infer market
+                val market = when {
+                    upper.startsWith("6") -> "SH"
+                    upper.startsWith("0") || upper.startsWith("3") -> "SZ"
+                    upper.startsWith("4") || upper.startsWith("8") || upper.startsWith("9") -> "BJ"
+                    else -> "SZ"
+                }
+                StockerMarketType.AShare to "$market$upper"
+            }
+            upper.matches(Regex("^[A-Z]{2,6}(USD|USDT)$")) -> StockerMarketType.Crypto to "BTC$upper"
+            upper.matches(Regex("^[A-Z]{1,5}$")) -> StockerMarketType.USStocks to upper
+            else -> StockerMarketType.AShare to upper
+        }
+    }
+
+    private fun processBatchImport(text: String): List<BatchResult> {
+        val rawCodes = parseBatchCodes(text)
+        val results = mutableListOf<BatchResult>()
+        val groupName = selectedGroup ?: setting.lastSelectedGroup.takeIf { it.isNotEmpty() }
+
+        for (raw in rawCodes) {
+            val (market, normalizedCode) = normalizeCode(raw)
+            try {
+                if (setting.containsCode(normalizedCode)) {
+                    results.add(BatchResult(raw, market, normalizedCode, true, "已存在"))
+                    continue
+                }
+                // Validate via HTTP
+                val provider = if (market == StockerMarketType.Crypto) {
+                    setting.cryptoQuoteProvider
+                } else {
+                    setting.quoteProvider
+                }
+                val valid = StockerQuoteHttpUtil.validateCode(market, provider, normalizedCode)
+                if (valid) {
+                    val suggest = StockerSuggestion(normalizedCode, normalizedCode, market)
+                    StockerActionUtil.addStock(market, suggest, project, groupName)
+                    results.add(BatchResult(raw, market, normalizedCode, true, "添加成功"))
+                } else {
+                    results.add(BatchResult(raw, market, normalizedCode, false, "无效代码"))
+                }
+            } catch (e: Exception) {
+                log.warn("Batch import failed for $raw", e)
+                results.add(BatchResult(raw, market, normalizedCode, false, "验证失败"))
+            }
+        }
+
+        // Restart scheduler after batch add
+        val myApplication = StockerAppManager.myApplication(project)
+        if (myApplication != null) {
+            myApplication.shutdownThenClear()
+            myApplication.schedule()
+        }
+
+        return results
+    }
+
     private fun refreshScrollPane(scrollPane: JBScrollPane) {
+        val batchRes = batchResults
         val contentPanel = if (isLoading) {
             panel {
                 row {
                     label("Searching...").align(AlignX.CENTER)
                 }
             }.withBorder(BorderFactory.createEmptyBorder(16, 8, 8, 8))
+        } else if (batchRes != null) {
+            // Show batch import results
+            panel {
+                row {
+                    label("Code").bold()
+                        .applyToComponent { minimumSize = java.awt.Dimension(120, 0); preferredSize = java.awt.Dimension(120, preferredSize.height) }
+                    label("Market").bold()
+                        .applyToComponent { minimumSize = java.awt.Dimension(80, 0); preferredSize = java.awt.Dimension(80, preferredSize.height) }
+                    label("Status").bold()
+                        .applyToComponent { minimumSize = java.awt.Dimension(200, 0); preferredSize = java.awt.Dimension(200, preferredSize.height) }
+                }.bottomGap(com.intellij.ui.dsl.builder.BottomGap.SMALL)
+                separator()
+                batchRes.forEach { result ->
+                    row {
+                        label(result.normalizedCode)
+                            .applyToComponent { minimumSize = java.awt.Dimension(120, 0); preferredSize = java.awt.Dimension(120, preferredSize.height) }
+                        label(result.market?.title ?: "-")
+                            .applyToComponent { minimumSize = java.awt.Dimension(80, 0); preferredSize = java.awt.Dimension(80, preferredSize.height) }
+                        label(if (result.success) "✓ ${result.message}" else "✗ ${result.message}")
+                            .applyToComponent {
+                                minimumSize = java.awt.Dimension(200, 0)
+                                preferredSize = java.awt.Dimension(200, preferredSize.height)
+                                foreground = if (result.success) javax.swing.UIManager.getColor("Label.foreground") else com.intellij.ui.JBColor.RED
+                            }
+                    }.bottomGap(com.intellij.ui.dsl.builder.BottomGap.SMALL)
+                }
+            }.withBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8))
         } else if (suggestions.isEmpty()) {
             val message = when (searchMode) {
                 SearchMode.STOCKS -> "Type to search for stocks (CN/HK/US)..."
