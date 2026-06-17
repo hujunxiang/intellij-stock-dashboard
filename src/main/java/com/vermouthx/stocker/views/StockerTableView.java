@@ -17,6 +17,7 @@ import com.vermouthx.stocker.enums.StockerTableColumn;
 import com.vermouthx.stocker.settings.StockerSetting;
 import com.vermouthx.stocker.utils.StockerActionUtil;
 import com.vermouthx.stocker.utils.StockerPinyinUtil;
+import com.intellij.ide.BrowserUtil;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
@@ -286,6 +287,17 @@ public class StockerTableView implements Disposable {
         });
         tbBody.addMouseListener(new MouseAdapter() {
             @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && !e.isPopupTrigger()) {
+                    int row = tbBody.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        String code = (String) tbModel.getValueAt(row, 0);
+                        openF10Url(code);
+                    }
+                }
+            }
+
+            @Override
             public void mousePressed(MouseEvent e) {
                 handleTableMouseEvent(e, rowPopupMenu);
             }
@@ -392,6 +404,27 @@ public class StockerTableView implements Disposable {
             deleteMenuItem.setForeground(hovering ? hoverForeground : defaultForeground);
         });
         deleteMenuItem.addActionListener(e -> deleteSelectedStock());
+
+        JMenuItem f10MenuItem = new JMenuItem("F10");
+        f10MenuItem.setOpaque(true);
+        f10MenuItem.setRolloverEnabled(true);
+        f10MenuItem.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        f10MenuItem.setBackground(defaultBackground);
+        f10MenuItem.setForeground(defaultForeground);
+        f10MenuItem.getModel().addChangeListener(e -> {
+            ButtonModel model = f10MenuItem.getModel();
+            boolean hovering = model.isArmed() || model.isRollover();
+            f10MenuItem.setBackground(hovering ? hoverBackground : defaultBackground);
+            f10MenuItem.setForeground(hovering ? hoverForeground : defaultForeground);
+        });
+        f10MenuItem.addActionListener(e -> {
+            if (popupTargetCode != null) {
+                openF10Url(popupTargetCode);
+            }
+        });
+
+        popupMenu.add(f10MenuItem);
+        popupMenu.add(deleteMenuItem);
         popupMenu.addPopupMenuListener(new PopupMenuListener() {
             @Override
             public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
@@ -1093,6 +1126,35 @@ public class StockerTableView implements Disposable {
                 setForeground(zeroColor);
             }
             return component;
+        }
+    }
+
+    private void openF10Url(String stockCode) {
+        if (stockCode == null || stockCode.isEmpty()) return;
+
+        // Build F10 URL for A-share stocks
+        // A-share codes: SH600410, SZ300308, SH688256, BJxxxxx, etc.
+        // URL pattern: https://webf10.gw.com.cn/{market}/B1/{market}{code}_B1.html
+        String market = null;
+        String code = null;
+        if (stockCode.startsWith("SH")) {
+            market = "SH";
+            code = stockCode.substring(2);
+        } else if (stockCode.startsWith("SZ")) {
+            market = "SZ";
+            code = stockCode.substring(2);
+        } else if (stockCode.startsWith("BJ")) {
+            market = "BJ";
+            code = stockCode.substring(2);
+        }
+
+        if (market == null || code == null || code.isEmpty()) return; // Not an A-share, skip
+
+        String url = "https://webf10.gw.com.cn/" + market + "/B1/" + market + code + "_B1.html";
+
+        try {
+            BrowserUtil.browse(url);
+        } catch (Exception ignored) {
         }
     }
 
