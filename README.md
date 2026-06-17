@@ -4,14 +4,9 @@ StockerPlus
 </h1>
 
 <p align="center">
-Stocker is a JetBrains IDE extension dashboard for investors to track real-time stock market conditions.
+StockerPlus is a JetBrains IDE extension dashboard for investors to track real-time stock market conditions.
 </p>
 <p align="center">
-<img src="https://github.com/WhiteVermouth/intellij-investor-dashboard/actions/workflows/build.yml/badge.svg" alt="Build Status" />
-<img src="https://img.shields.io/github/v/release/WhiteVermouth/intellij-investor-dashboard" alt="GitHub Release" />
-<img src="https://img.shields.io/jetbrains/plugin/v/com.vermouthx.intellij-investor-dashboard" alt="Marketplace Release" />
-<img src="https://img.shields.io/jetbrains/plugin/d/com.vermouthx.intellij-investor-dashboard" alt="Marketplace Downloads" />
-<img src="https://img.shields.io/github/license/WhiteVermouth/intellij-investor-dashboard" alt="License" />
 </p>
 <p align="center">
 <img src="./screenshots/Dashboard.png" alt="Dashboard"/>
