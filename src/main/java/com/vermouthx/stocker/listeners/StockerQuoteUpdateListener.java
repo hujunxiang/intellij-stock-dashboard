@@ -19,7 +19,7 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     private final StockerTableView myTableView;
     private volatile String groupFilter = null; // null = show all
     private volatile List<StockerQuote> storedQuotes = new CopyOnWriteArrayList<>();
-    private final java.util.Set<String> notifiedCodes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final java.util.Map<String, Double> lastNotifiedPct = new java.util.concurrent.ConcurrentHashMap<>();
 
     public void setGroupFilter(String groupFilter) {
         this.groupFilter = (groupFilter != null && !groupFilter.isEmpty()) ? groupFilter : null;
@@ -68,8 +68,6 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     public void syncQuotes(List<StockerQuote> quotes, int size) {
         // Store all quotes atomically (replace, don't clear+add)
         storedQuotes = new CopyOnWriteArrayList<>(quotes);
-        // Clear notified codes on each new data cycle
-        notifiedCodes.clear();
         applyGroupFilter(quotes);
     }
 
@@ -210,23 +208,34 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
 
         for (StockerQuote quote : quotes) {
             String code = quote.getCode();
-            if (notifiedCodes.contains(code)) continue;
-
             double pct = quote.getPercentage();
+
             if (rise > 0 && pct >= rise) {
-                notifiedCodes.add(code);
+                Double lastPct = lastNotifiedPct.get(code);
+                if (lastPct != null && Math.abs(lastPct - pct) < 0.01) continue; // Same data, skip
+                lastNotifiedPct.put(code, pct);
                 riseItems.add(String.format("<span style='color:%s'>&#x25B2; %s <b>+%s%%</b></span>",
                         riseColor, quote.getName(), String.format("%.2f", pct)));
             } else if (fall < 0 && pct <= fall) {
-                notifiedCodes.add(code);
+                Double lastPct = lastNotifiedPct.get(code);
+                if (lastPct != null && Math.abs(lastPct - pct) < 0.01) continue; // Same data, skip
+                lastNotifiedPct.put(code, pct);
                 fallItems.add(String.format("<span style='color:%s'>&#x25BC; %s <b>%s%%</b></span>",
                         fallColor, quote.getName(), String.format("%.2f", pct)));
+            } else {
+                // No longer triggered, remove from tracking so it can trigger again later
+                lastNotifiedPct.remove(code);
             }
         }
 
         if (riseItems.isEmpty() && fallItems.isEmpty()) return;
 
-        StringBuilder html = new StringBuilder("<html><body style='width:280px;line-height:1.6'>");
+        // Get IDE theme colors for background
+        String bgColor = javax.swing.UIManager.getColor("Panel.background") != null
+                ? String.format("#%06x", javax.swing.UIManager.getColor("Panel.background").getRGB() & 0xFFFFFF)
+                : "#FFFFFF";
+
+        StringBuilder html = new StringBuilder("<html><body style='width:280px;line-height:1.6;background:" + bgColor + "'>");
         for (String item : riseItems) html.append(item).append("<br>");
         for (String item : fallItems) html.append(item).append("<br>");
         html.append("</body></html>");
@@ -236,7 +245,7 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
         try {
             com.intellij.notification.Notification notification = NotificationGroupManager.getInstance()
                     .getNotificationGroup("StockerPlus")
-                    .createNotification(title, html.toString(), NotificationType.WARNING)
+                    .createNotification(title, html.toString(), NotificationType.INFORMATION)
                     .setIcon(IconLoader.getIcon("/icons/logo.png", getClass()));
             notification.notify(null);
 

@@ -1,1 +1,1 @@
-rootProject.name = "intellij-investor-dashboard"
+rootProject.name = "intellij-stock-dashboard"

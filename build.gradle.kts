@@ -65,18 +65,22 @@ changelog {
 val pluginDescription = """
     <div>
       <p>
-        Stocker is a JetBrains IDE extension dashboard for investors to track
+        StockerPlus is a JetBrains IDE extension dashboard for investors to track
         real-time stock market conditions.
       </p>
       <h2>Features</h2>
       <ul>
-        <li>📊 Real-time market data for stocks and cryptocurrencies</li>
-        <li>🌐 Support for A-Shares, Hong Kong stocks, US stocks, and cryptocurrencies</li>
-        <li>🎨 Customizable display with multiple color patterns and table columns</li>
-        <li>🔤 Pinyin support for stock names</li>
-        <li>📈 Sortable columns with three-state sorting</li>
-        <li>🎯 Custom stock names and smart search</li>
-        <li>📋 Batch operations for stock management</li>
+        <li>- 📊 **Real-time Market Data** - Track stocks and cryptocurrencies with live updates</li>
+        <li>- 🎨 **Customizable Display** - Choose from multiple color patterns and customize visible table columns</li>
+        <li>- 🔤 **Pinyin Support** - Display stock names in Pinyin for easier reading</li>
+        <li>- 📈 **Sortable Columns** - Three-state sorting (ascending, descending, unsorted) on any column</li>
+        <li>- 🪙 **Cryptocurrency Support** - Monitor crypto assets alongside traditional securities</li>
+        <li>- 🎯 **Custom Stock Names** - Set custom names for your favorite stocks</li>
+        <li>- 🔍 **Smart Search** - Quickly find and add stocks with intelligent search dialog</li>
+        <li>- 📋 **Batch Operations** - Manage multiple stocks at once with batch add and delete and reorder</li>
+        <li>- 💾 **Persistent Settings** - Your preferences and watchlist are saved across IDE sessions</li>
+        <li>- 🌐 **F10 Stock Detail** - Open stock detail page in browser with F10 key</li>
+        <li>- 📦 **Stock Groups Operations** - Manage stock groups</li>
       </ul>
       <h2>Quick Start</h2>
       <ol>
@@ -85,16 +89,7 @@ val pluginDescription = """
         <li>Customize settings at Settings → Tools → Stocker</li>
         <li>Track your investments in real-time!</li>
       </ol>
-      <h2>Documentation</h2>
-      <ul>
-        <li><a href="https://www.vermouthx.com/posts/2021/stocker">Getting Started Guide</a></li>
-        <li><a href="https://github.com/WhiteVermouth/intellij-investor-dashboard/blob/master/CHANGELOG.md">Changelog</a></li>
-        <li><a href="https://github.com/WhiteVermouth/intellij-investor-dashboard/issues">Report Issues</a></li>
-      </ul>
-      <h2>License</h2>
-      <a href="https://raw.githubusercontent.com/WhiteVermouth/intellij-investor-dashboard/master/LICENSE">Apache 2.0 License</a>
-      <h2>Donation</h2>
-      <p>If you like this plugin, you can <a href="https://www.buymeacoffee.com/nszihan">buy me a cup of coffee</a>. Thank you!</p>
+   
     </div>
 """.trimIndent()
 

@@ -28,7 +28,6 @@ StockerPlus is a JetBrains IDE extension dashboard for investors to track real-t
 - 📦 **Stock Groups Operations** - Manage stock groups
 
 
-
 ## 📊 Supported Markets
 
 - **A-Shares** - Shanghai Stock Exchange (SSE) & Shenzhen Stock Exchange (SZSE)
@@ -60,6 +59,31 @@ StockerPlus is a JetBrains IDE extension dashboard for investors to track real-t
 5. **Start Tracking**
    - Watch your investments update in real-time
    - Sort, filter, and manage your watchlist as needed
+
+## 🔨 Build
+
+**Prerequisites:** JDK 21
+
+```bash
+# Set JDK 21 environment (adjust path as needed)
+export JAVA_HOME="/path/to/jdk-21"
+
+# Compile only (fast check)
+./gradlew compileKotlin compileJava
+
+# Run unit tests
+./gradlew test
+
+# Full build (compile + test + package)
+./gradlew build
+
+# Build distributable plugin zip
+./gradlew clean buildPlugin
+```
+
+Output: `build/distributions/intellij-stock-dashboard-{version}.zip`
+
+Install: `Settings` → `Plugins` → `⚙` → `Install Plugin from Disk` → select the zip file
 
 ## 🔧 Compatibility
 
