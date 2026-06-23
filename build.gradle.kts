@@ -10,7 +10,7 @@ fun properties(key: String) = project.findProperty(key).toString()
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.2.21"
-    id("org.jetbrains.intellij.platform") version "2.16.0"
+    id("org.jetbrains.intellij.platform") version "2.12.0"
     id("org.jetbrains.changelog") version "2.5.0"
 }
 
@@ -86,7 +86,7 @@ val pluginDescription = """
       <ol>
         <li>Open the Stocker tool window from the sidebar</li>
         <li>Click "Add Favorite Stocks" to search and add stocks</li>
-        <li>Customize settings at Settings → Tools → Stocker</li>
+        <li>Customize settings at Settings → Tools → StockerPlus</li>
         <li>Track your investments in real-time!</li>
       </ol>
    
