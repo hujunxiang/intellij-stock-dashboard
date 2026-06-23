@@ -3,7 +3,6 @@ package com.vermouthx.stocker.views.windows
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.JBColor
-import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.dsl.listCellRenderer.textListCellRenderer
 import com.vermouthx.stocker.StockerAppManager
@@ -94,8 +93,8 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 row {
                     label(StockerBundle.message("settings.refresh.interval"))
                         .widthGroup("labels")
-                    comboBox((1L..10L).toList(), SimpleListCellRenderer.create { label, value, _ ->
-                        label.text = if (value != null) StockerBundle.message("settings.refresh.interval.seconds", value) else ""
+                    comboBox((1L..10L).toList(), textListCellRenderer { value: Long? ->
+                        if (value != null) StockerBundle.message("settings.refresh.interval.seconds", value) else ""
                     })
                         .bindItem(
                             { refreshInterval },
@@ -107,8 +106,8 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 row {
                     label(StockerBundle.message("settings.alert.rise"))
                         .widthGroup("labels")
-                    comboBox(listOf(0) + (1..10).toList(), SimpleListCellRenderer.create { label, value, _ ->
-                        label.text = if (value != null && value > 0) {
+                    comboBox(listOf(0) + (1..10).toList(), textListCellRenderer { value: Int? ->
+                        if (value != null && value > 0) {
                             StockerBundle.message("settings.alert.rise.value", value)
                         } else {
                             StockerBundle.message("settings.alert.rise.disabled")
@@ -124,8 +123,8 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 row {
                     label(StockerBundle.message("settings.alert.fall"))
                         .widthGroup("labels")
-                    comboBox(listOf(0) + (-1 downTo -10).toList(), SimpleListCellRenderer.create { label, value, _ ->
-                        label.text = if (value != null && value < 0) {
+                    comboBox(listOf(0) + (-1 downTo -10).toList(), textListCellRenderer { value: Int? ->
+                        if (value != null && value < 0) {
                             StockerBundle.message("settings.alert.fall.value", value)
                         } else {
                             StockerBundle.message("settings.alert.fall.disabled")
