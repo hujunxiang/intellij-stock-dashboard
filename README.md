@@ -24,8 +24,8 @@ StockerPlus is a JetBrains IDE extension dashboard for investors to track real-t
 - 🔍 **Smart Search** - Quickly find and add stocks with intelligent search dialog
 - 📋 **Batch Operations** - Manage multiple stocks at once with batch add and delete and reorder
 - 💾 **Persistent Settings** - Your preferences and watchlist are saved across IDE sessions
-- 🌐 **F10 Stock Detail** - Open stock detail page in browser with F10 key
 - 📦 **Stock Groups Operations** - Manage stock groups
+- 🌐 **F10 Stock Detail** - Open stock detail page in browser with F10 key
 
 
 ## 📊 Supported Markets
