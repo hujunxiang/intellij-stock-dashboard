@@ -43,7 +43,7 @@ dependencies {
     testImplementation(kotlin("test-junit5"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // The IntelliJ Platform on the test classpath references JUnit 4's TestRule, which the
-    // 2025.3+ platform no longer provides transitively. Our own tests run on JUnit 5 via
+    // 2025.2+ platform no longer provides transitively. Our own tests run on JUnit 5 via
     // useJUnitPlatform(); this only satisfies the platform's runtime reference.
     testRuntimeOnly("junit:junit:4.13.2")
     intellijPlatform {
@@ -115,7 +115,7 @@ intellijPlatform {
             select {
                 types = listOf(IntelliJPlatformType.IntellijIdeaUltimate)
                 channels = listOf(ProductRelease.Channel.RELEASE)
-                sinceBuild = "253"
+                sinceBuild = "252"
             }
         }
         failureLevel = listOf(
@@ -136,7 +136,7 @@ val latestIdeaReleaseVersion = providers.of(ProductReleasesValueSource::class) {
         androidStudioUrl = Constants.Locations.PRODUCTS_RELEASES_ANDROID_STUDIO
         channels = listOf(ProductRelease.Channel.RELEASE)
         types = listOf(IntelliJPlatformType.IntellijIdeaUltimate)
-        sinceBuild = "253"
+        sinceBuild = "252"
         untilBuild = "999.*"
     }
 }.map { releases -> releases.first().substringAfter('-') }

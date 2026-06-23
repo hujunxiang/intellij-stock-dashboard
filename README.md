@@ -87,7 +87,7 @@ Install: `Settings` → `Plugins` → `⚙` → `Install Plugin from Disk` → s
 
 ## 🔧 Compatibility
 
-- **IDE Version**: IntelliJ IDEA 2025.3+ (and other JetBrains IDEs)
+- **IDE Version**: IntelliJ IDEA 2025.2+ (and other JetBrains IDEs)
 - **Platforms**: Windows, macOS, Linux
 
 

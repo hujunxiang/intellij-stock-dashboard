@@ -2,7 +2,7 @@
     <id>com.huly.stocker-plus</id>
     <name>StockerPlus</name>
     <vendor email="905982692@qq.com" >huly</vendor>
-    <idea-version since-build="253"/>
+    <idea-version since-build="252"/>
     <resource-bundle>messages.StockerBundle</resource-bundle>
     <depends>com.intellij.modules.platform</depends>
     <extensions defaultExtensionNs="com.intellij">
