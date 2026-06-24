@@ -1,5 +1,6 @@
 package com.vermouthx.stocker.activities
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -18,6 +19,18 @@ class StockerStartupActivity : ProjectActivity, DumbAware {
         if (StockerMeta.currentVersion != settings.version) {
             settings.version = StockerMeta.currentVersion
             StockerNotification.notifyReleaseNote(project)
+        }
+        prewarmSettingsFramework()
+    }
+
+    private fun prewarmSettingsFramework() {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                Class.forName("com.intellij.openapi.options.ex.EpBasedConfigurableGroup")
+                Class.forName("com.intellij.application.options.colors.ColorAndFontOptions")
+                Class.forName("com.intellij.openapi.options.colors.pages.ColorSettingsPagesImpl")
+            } catch (_: ClassNotFoundException) {
+            }
         }
     }
 }

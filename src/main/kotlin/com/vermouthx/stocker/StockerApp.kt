@@ -44,7 +44,6 @@ class StockerApp {
     fun shutdown() {
         refreshActive = false
         scheduledExecutorService.shutdownNow()
-        StockerQuoteHttpUtil.closeConnections()
     }
 
     fun isShutdown(): Boolean {
