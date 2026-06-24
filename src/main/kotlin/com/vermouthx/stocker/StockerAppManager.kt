@@ -28,6 +28,13 @@ object StockerAppManager {
         }
     }
 
+    fun restart(project: Project) {
+        myApplicationMap[project]?.shutdownThenClear()
+        val newApp = StockerApp()
+        myApplicationMap[project] = newApp
+        newApp.schedule()
+    }
+
     class StockerProjectManagerListener : ProjectManagerListener {
         override fun projectClosing(project: Project) {
             unregister(project)

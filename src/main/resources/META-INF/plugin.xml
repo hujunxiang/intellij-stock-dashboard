@@ -57,6 +57,12 @@
                     description="%action.remove.all.favorite.stocks.description"
                     icon="AllIcons.General.Reset">
             </action>
+            <action class="com.vermouthx.stocker.actions.StockerRestartAction"
+                    id="com.vermouthx.stocker.actions.StockerRestartAction"
+                    text="%action.restart"
+                    description="%action.restart.description"
+                    icon="AllIcons.Actions.ForceRefresh">
+            </action>
         </group>
     </actions>
 </idea-plugin>
