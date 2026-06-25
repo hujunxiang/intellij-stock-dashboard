@@ -15,6 +15,7 @@ import com.vermouthx.stocker.enums.StockerMarketType;
 import com.vermouthx.stocker.enums.StockerSortState;
 import com.vermouthx.stocker.enums.StockerTableColumn;
 import com.vermouthx.stocker.settings.StockerSetting;
+import com.vermouthx.stocker.StockerBundle;
 import com.vermouthx.stocker.utils.StockerActionUtil;
 import com.vermouthx.stocker.utils.StockerPinyinUtil;
 import com.intellij.ide.BrowserUtil;
@@ -71,6 +72,11 @@ public class StockerTableView implements Disposable {
     private List<Object[]> sortBackupData = null;
     private String popupTargetCode = null;
     private String popupTargetName = null;
+    private volatile String lastActiveGroupFilter = null;
+    private JMenuItem miPinToTop;
+    private JMenuItem miPinToBottom;
+    private JMenuItem miMoveUp;
+    private JMenuItem miMoveDown;
 
     private volatile boolean disposed = false;
 
@@ -379,55 +385,72 @@ public class StockerTableView implements Disposable {
         }
     }
 
-    private JPopupMenu createRowPopupMenu() {
-        JPopupMenu popupMenu = new JPopupMenu();
-        JMenuItem deleteMenuItem = new JMenuItem("Delete");
-        deleteMenuItem.setOpaque(true);
-        deleteMenuItem.setRolloverEnabled(true);
-        deleteMenuItem.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        Color defaultBackground = JBColor.namedColor("MenuItem.background", UIManager.getColor("MenuItem.background"));
-        Color defaultForeground = JBColor.namedColor("MenuItem.foreground", UIManager.getColor("MenuItem.foreground"));
-        Color hoverBackground = JBColor.namedColor(
+    private JMenuItem createStyledMenuItem(String text) {
+        JMenuItem item = new JMenuItem(text);
+        item.setOpaque(true);
+        item.setRolloverEnabled(true);
+        item.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        Color defaultBg = JBColor.namedColor("MenuItem.background", UIManager.getColor("MenuItem.background"));
+        Color defaultFg = JBColor.namedColor("MenuItem.foreground", UIManager.getColor("MenuItem.foreground"));
+        Color hoverBg = JBColor.namedColor(
                 "MenuItem.selectionBackground",
                 JBColor.namedColor("List.selectionBackground", tbBody.getSelectionBackground())
         );
-        Color hoverForeground = JBColor.namedColor(
+        Color hoverFg = JBColor.namedColor(
                 "MenuItem.selectionForeground",
                 JBColor.namedColor("List.selectionForeground", tbBody.getSelectionForeground())
         );
-        deleteMenuItem.setBackground(defaultBackground);
-        deleteMenuItem.setForeground(defaultForeground);
-        deleteMenuItem.getModel().addChangeListener(e -> {
-            ButtonModel model = deleteMenuItem.getModel();
+        item.setBackground(defaultBg);
+        item.setForeground(defaultFg);
+        item.getModel().addChangeListener(e -> {
+            ButtonModel model = item.getModel();
             boolean hovering = model.isArmed() || model.isRollover();
-            deleteMenuItem.setBackground(hovering ? hoverBackground : defaultBackground);
-            deleteMenuItem.setForeground(hovering ? hoverForeground : defaultForeground);
+            item.setBackground(hovering ? hoverBg : defaultBg);
+            item.setForeground(hovering ? hoverFg : defaultFg);
         });
-        deleteMenuItem.addActionListener(e -> deleteSelectedStock());
+        return item;
+    }
 
-        JMenuItem f10MenuItem = new JMenuItem("F10");
-        f10MenuItem.setOpaque(true);
-        f10MenuItem.setRolloverEnabled(true);
-        f10MenuItem.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        f10MenuItem.setBackground(defaultBackground);
-        f10MenuItem.setForeground(defaultForeground);
-        f10MenuItem.getModel().addChangeListener(e -> {
-            ButtonModel model = f10MenuItem.getModel();
-            boolean hovering = model.isArmed() || model.isRollover();
-            f10MenuItem.setBackground(hovering ? hoverBackground : defaultBackground);
-            f10MenuItem.setForeground(hovering ? hoverForeground : defaultForeground);
-        });
+    private JPopupMenu createRowPopupMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+
+        JMenuItem f10MenuItem = createStyledMenuItem("F10");
         f10MenuItem.addActionListener(e -> {
             if (popupTargetCode != null) {
                 openF10Url(popupTargetCode);
             }
         });
 
+        JMenuItem miPinToTop = createStyledMenuItem(StockerBundle.message("popup.pin.to.top"));
+        JMenuItem miPinToBottom = createStyledMenuItem(StockerBundle.message("popup.pin.to.bottom"));
+        JMenuItem miMoveUp = createStyledMenuItem(StockerBundle.message("popup.move.up"));
+        JMenuItem miMoveDown = createStyledMenuItem(StockerBundle.message("popup.move.down"));
+        this.miPinToTop = miPinToTop;
+        this.miPinToBottom = miPinToBottom;
+        this.miMoveUp = miMoveUp;
+        this.miMoveDown = miMoveDown;
+
+        miPinToTop.addActionListener(e -> handleReorder("pinToTop"));
+        miPinToBottom.addActionListener(e -> handleReorder("pinToBottom"));
+        miMoveUp.addActionListener(e -> handleReorder("moveUp"));
+        miMoveDown.addActionListener(e -> handleReorder("moveDown"));
+
+        JMenuItem deleteMenuItem = createStyledMenuItem("Delete");
+        deleteMenuItem.addActionListener(e -> deleteSelectedStock());
+
         popupMenu.add(f10MenuItem);
+        popupMenu.add(new JSeparator());
+        popupMenu.add(miPinToTop);
+        popupMenu.add(miPinToBottom);
+        popupMenu.add(miMoveUp);
+        popupMenu.add(miMoveDown);
+        popupMenu.add(new JSeparator());
         popupMenu.add(deleteMenuItem);
+
         popupMenu.addPopupMenuListener(new PopupMenuListener() {
             @Override
             public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                updateReorderMenuItems();
             }
 
             @Override
@@ -440,8 +463,104 @@ public class StockerTableView implements Disposable {
                 clearPopupStateLater(popupMenu);
             }
         });
-        popupMenu.add(deleteMenuItem);
         return popupMenu;
+    }
+
+    public void setLastActiveGroupFilter(String group) {
+        this.lastActiveGroupFilter = (group != null && !group.isEmpty()) ? group : null;
+    }
+
+    private void updateReorderMenuItems() {
+        String code = popupTargetCode;
+        if (code == null) {
+            setReorderEnabled(false);
+            return;
+        }
+        StockerSetting setting = StockerSetting.Companion.getInstance();
+        String currentGroup = lastActiveGroupFilter;
+
+        if (currentGroup != null) {
+            java.util.List<String> groupCodes = setting.getGroupStocks(currentGroup);
+            int idx = groupCodes.indexOf(code);
+            if (idx < 0) {
+                setReorderEnabled(false);
+                return;
+            }
+            miPinToTop.setEnabled(idx > 0);
+            miMoveUp.setEnabled(idx > 0);
+            miMoveDown.setEnabled(idx < groupCodes.size() - 1);
+            miPinToBottom.setEnabled(idx < groupCodes.size() - 1);
+        } else {
+            java.util.List<String> marketList = setting.marketListOf(code);
+            if (marketList == null) {
+                setReorderEnabled(false);
+                return;
+            }
+            int idx = marketList.indexOf(code);
+            if (idx < 0) {
+                setReorderEnabled(false);
+                return;
+            }
+            miPinToTop.setEnabled(idx > 0);
+            miMoveUp.setEnabled(idx > 0);
+            miMoveDown.setEnabled(idx < marketList.size() - 1);
+            miPinToBottom.setEnabled(idx < marketList.size() - 1);
+        }
+    }
+
+    private void setReorderEnabled(boolean enabled) {
+        miPinToTop.setEnabled(enabled);
+        miPinToBottom.setEnabled(enabled);
+        miMoveUp.setEnabled(enabled);
+        miMoveDown.setEnabled(enabled);
+    }
+
+    private void handleReorder(String action) {
+        String code = popupTargetCode;
+        if (code == null) return;
+
+        StockerSetting setting = StockerSetting.Companion.getInstance();
+        String currentGroup = lastActiveGroupFilter;
+
+        if (currentGroup != null) {
+            switch (action) {
+                case "pinToTop":    setting.groupPinToTop(currentGroup, code); break;
+                case "pinToBottom": setting.groupPinToBottom(currentGroup, code); break;
+                case "moveUp":      setting.groupMoveUp(currentGroup, code); break;
+                case "moveDown":    setting.groupMoveDown(currentGroup, code); break;
+            }
+        } else {
+            switch (action) {
+                case "pinToTop":    setting.marketPinToTop(code); break;
+                case "pinToBottom": setting.marketPinToBottom(code); break;
+                case "moveUp":      setting.marketMoveUp(code); break;
+                case "moveDown":    setting.marketMoveDown(code); break;
+            }
+        }
+
+        int selectedRow = tbBody.getSelectedRow();
+        if (selectedRow < 0) return;
+
+        clearSortState();
+
+        int rowCount = tbModel.getRowCount();
+        int targetRow;
+        switch (action) {
+            case "pinToTop":    targetRow = 0; break;
+            case "pinToBottom": targetRow = rowCount - 1; break;
+            case "moveUp":      targetRow = Math.max(0, selectedRow - 1); break;
+            case "moveDown":    targetRow = Math.min(rowCount - 1, selectedRow + 1); break;
+            default: return;
+        }
+
+        if (targetRow == selectedRow) return;
+
+        synchronized (tbModel) {
+            tbModel.moveRow(selectedRow, selectedRow, targetRow);
+        }
+
+        tbBody.setRowSelectionInterval(targetRow, targetRow);
+        tbBody.scrollRectToVisible(tbBody.getCellRect(targetRow, 0, true));
     }
 
     private void deleteSelectedStock() {

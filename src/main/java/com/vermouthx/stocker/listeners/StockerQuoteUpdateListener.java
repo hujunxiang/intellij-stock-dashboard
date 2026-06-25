@@ -81,103 +81,122 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
         DefaultTableModel tableModel = myTableView.getTableModel();
         StockerSetting setting = StockerSetting.Companion.getInstance();
 
-        // Filter by group if a group filter is active
         String currentGroup = groupFilter;
         final List<StockerQuote> filteredQuotes;
+
         if (currentGroup != null) {
             List<String> groupCodes = setting.getGroupStocks(currentGroup);
+            java.util.Map<String, Integer> groupPosition = new java.util.HashMap<>();
+            for (int i = 0; i < groupCodes.size(); i++) {
+                groupPosition.put(groupCodes.get(i), i);
+            }
             filteredQuotes = quotes.stream()
                     .filter(q -> groupCodes.contains(q.getCode()))
+                    .sorted((q1, q2) -> {
+                        Integer p1 = groupPosition.get(q1.getCode());
+                        Integer p2 = groupPosition.get(q2.getCode());
+                        return Integer.compare(
+                                p1 != null ? p1 : Integer.MAX_VALUE,
+                                p2 != null ? p2 : Integer.MAX_VALUE);
+                    })
                     .collect(Collectors.toList());
-        } else {
-            filteredQuotes = quotes;
-        }
 
-        filteredQuotes.forEach(quote -> {
             synchronized (tableModel) {
-                String displayName = setting.getDisplayName(quote.getCode(), quote.getName());
-                int rowIndex = StockerTableModelUtil.existAt(tableModel, quote.getCode());
-                if (rowIndex != -1) {
-                    // Update existing row - check each column
-                    if (!tableModel.getValueAt(rowIndex, 1).equals(displayName)) {
-                        tableModel.setValueAt(displayName, rowIndex, 1);
-                        tableModel.fireTableCellUpdated(rowIndex, 1);
-                    }
-                    if (!tableModel.getValueAt(rowIndex, 2).equals(quote.getCurrent())) {
-                        tableModel.setValueAt(quote.getCurrent(), rowIndex, 2);
-                        tableModel.fireTableCellUpdated(rowIndex, 2);
-                    }
-                    if (!tableModel.getValueAt(rowIndex, 3).equals(quote.getOpening())) {
-                        tableModel.setValueAt(quote.getOpening(), rowIndex, 3);
-                        tableModel.fireTableCellUpdated(rowIndex, 3);
-                    }
-                    if (!tableModel.getValueAt(rowIndex, 4).equals(quote.getClose())) {
-                        tableModel.setValueAt(quote.getClose(), rowIndex, 4);
-                        tableModel.fireTableCellUpdated(rowIndex, 4);
-                    }
-                    if (!tableModel.getValueAt(rowIndex, 5).equals(quote.getLow())) {
-                        tableModel.setValueAt(quote.getLow(), rowIndex, 5);
-                        tableModel.fireTableCellUpdated(rowIndex, 5);
-                    }
-                    if (!tableModel.getValueAt(rowIndex, 6).equals(quote.getHigh())) {
-                        tableModel.setValueAt(quote.getHigh(), rowIndex, 6);
-                        tableModel.fireTableCellUpdated(rowIndex, 6);
-                    }
-                    if (!tableModel.getValueAt(rowIndex, 7).equals(quote.getChange())) {
-                        tableModel.setValueAt(quote.getChange(), rowIndex, 7);
-                        tableModel.fireTableCellUpdated(rowIndex, 7);
-                    }
-                    if (!tableModel.getValueAt(rowIndex, 8).equals(quote.getPercentage())) {
-                        tableModel.setValueAt(quote.getPercentage() + "%", rowIndex, 8);
-                        tableModel.fireTableCellUpdated(rowIndex, 8);
-                    }
-                    Double costPrice = setting.getCostPrice(quote.getCode());
-                    String costPriceStr = formatCostPrice(costPrice);
-                    if (!costPriceStr.equals(tableModel.getValueAt(rowIndex, 9))) {
-                        tableModel.setValueAt(costPriceStr, rowIndex, 9);
-                        tableModel.fireTableCellUpdated(rowIndex, 9);
-                    }
-                    Integer holdings = setting.getHoldings(quote.getCode());
-                    Object holdingsVal = formatHoldings(holdings);
-                    if (!holdingsVal.equals(tableModel.getValueAt(rowIndex, 10))) {
-                        tableModel.setValueAt(holdingsVal, rowIndex, 10);
-                        tableModel.fireTableCellUpdated(rowIndex, 10);
-                    }
-                    Object netProfitVal = formatNetProfit(quote, costPrice, holdings);
-                    if (!netProfitVal.equals(tableModel.getValueAt(rowIndex, 11))) {
-                        tableModel.setValueAt(netProfitVal, rowIndex, 11);
-                        tableModel.fireTableCellUpdated(rowIndex, 11);
-                    }
-                    Object dailyProfitVal = formatDailyProfit(quote, holdings);
-                    if (!dailyProfitVal.equals(tableModel.getValueAt(rowIndex, 12))) {
-                        tableModel.setValueAt(dailyProfitVal, rowIndex, 12);
-                        tableModel.fireTableCellUpdated(rowIndex, 12);
-                    }
-                } else {
-                    // Add new row
+                tableModel.setRowCount(0);
+                for (StockerQuote quote : filteredQuotes) {
                     Double costPrice = setting.getCostPrice(quote.getCode());
                     Integer holdings = setting.getHoldings(quote.getCode());
+                    String displayName = setting.getDisplayName(quote.getCode(), quote.getName());
                     tableModel.addRow(new Object[]{
-                            quote.getCode(),
-                            displayName,
-                            quote.getCurrent(),
-                            quote.getOpening(),
-                            quote.getClose(),
-                            quote.getLow(),
-                            quote.getHigh(),
-                            quote.getChange(),
-                            quote.getPercentage() + "%",
-                            formatCostPrice(costPrice),
-                            formatHoldings(holdings),
+                            quote.getCode(), displayName,
+                            quote.getCurrent(), quote.getOpening(), quote.getClose(),
+                            quote.getLow(), quote.getHigh(),
+                            quote.getChange(), quote.getPercentage() + "%",
+                            formatCostPrice(costPrice), formatHoldings(holdings),
                             formatNetProfit(quote, costPrice, holdings),
                             formatDailyProfit(quote, holdings)
                     });
-                    myTableView.clearSortState();
                 }
             }
-        });
+        } else {
+            filteredQuotes = quotes;
+            filteredQuotes.forEach(quote -> {
+                synchronized (tableModel) {
+                    String displayName = setting.getDisplayName(quote.getCode(), quote.getName());
+                    int rowIndex = StockerTableModelUtil.existAt(tableModel, quote.getCode());
+                    if (rowIndex != -1) {
+                        if (!tableModel.getValueAt(rowIndex, 1).equals(displayName)) {
+                            tableModel.setValueAt(displayName, rowIndex, 1);
+                            tableModel.fireTableCellUpdated(rowIndex, 1);
+                        }
+                        if (!tableModel.getValueAt(rowIndex, 2).equals(quote.getCurrent())) {
+                            tableModel.setValueAt(quote.getCurrent(), rowIndex, 2);
+                            tableModel.fireTableCellUpdated(rowIndex, 2);
+                        }
+                        if (!tableModel.getValueAt(rowIndex, 3).equals(quote.getOpening())) {
+                            tableModel.setValueAt(quote.getOpening(), rowIndex, 3);
+                            tableModel.fireTableCellUpdated(rowIndex, 3);
+                        }
+                        if (!tableModel.getValueAt(rowIndex, 4).equals(quote.getClose())) {
+                            tableModel.setValueAt(quote.getClose(), rowIndex, 4);
+                            tableModel.fireTableCellUpdated(rowIndex, 4);
+                        }
+                        if (!tableModel.getValueAt(rowIndex, 5).equals(quote.getLow())) {
+                            tableModel.setValueAt(quote.getLow(), rowIndex, 5);
+                            tableModel.fireTableCellUpdated(rowIndex, 5);
+                        }
+                        if (!tableModel.getValueAt(rowIndex, 6).equals(quote.getHigh())) {
+                            tableModel.setValueAt(quote.getHigh(), rowIndex, 6);
+                            tableModel.fireTableCellUpdated(rowIndex, 6);
+                        }
+                        if (!tableModel.getValueAt(rowIndex, 7).equals(quote.getChange())) {
+                            tableModel.setValueAt(quote.getChange(), rowIndex, 7);
+                            tableModel.fireTableCellUpdated(rowIndex, 7);
+                        }
+                        if (!tableModel.getValueAt(rowIndex, 8).equals(quote.getPercentage())) {
+                            tableModel.setValueAt(quote.getPercentage() + "%", rowIndex, 8);
+                            tableModel.fireTableCellUpdated(rowIndex, 8);
+                        }
+                        Double costPrice = setting.getCostPrice(quote.getCode());
+                        String costPriceStr = formatCostPrice(costPrice);
+                        if (!costPriceStr.equals(tableModel.getValueAt(rowIndex, 9))) {
+                            tableModel.setValueAt(costPriceStr, rowIndex, 9);
+                            tableModel.fireTableCellUpdated(rowIndex, 9);
+                        }
+                        Integer holdings = setting.getHoldings(quote.getCode());
+                        Object holdingsVal = formatHoldings(holdings);
+                        if (!holdingsVal.equals(tableModel.getValueAt(rowIndex, 10))) {
+                            tableModel.setValueAt(holdingsVal, rowIndex, 10);
+                            tableModel.fireTableCellUpdated(rowIndex, 10);
+                        }
+                        Object netProfitVal = formatNetProfit(quote, costPrice, holdings);
+                        if (!netProfitVal.equals(tableModel.getValueAt(rowIndex, 11))) {
+                            tableModel.setValueAt(netProfitVal, rowIndex, 11);
+                            tableModel.fireTableCellUpdated(rowIndex, 11);
+                        }
+                        Object dailyProfitVal = formatDailyProfit(quote, holdings);
+                        if (!dailyProfitVal.equals(tableModel.getValueAt(rowIndex, 12))) {
+                            tableModel.setValueAt(dailyProfitVal, rowIndex, 12);
+                            tableModel.fireTableCellUpdated(rowIndex, 12);
+                        }
+                    } else {
+                        Double costPrice = setting.getCostPrice(quote.getCode());
+                        Integer holdings = setting.getHoldings(quote.getCode());
+                        tableModel.addRow(new Object[]{
+                                quote.getCode(), displayName,
+                                quote.getCurrent(), quote.getOpening(), quote.getClose(),
+                                quote.getLow(), quote.getHigh(),
+                                quote.getChange(), quote.getPercentage() + "%",
+                                formatCostPrice(costPrice), formatHoldings(holdings),
+                                formatNetProfit(quote, costPrice, holdings),
+                                formatDailyProfit(quote, holdings)
+                        });
+                        myTableView.clearSortState();
+                    }
+                }
+            });
+        }
 
-        // Check thresholds and notify
         checkThresholdAlerts(filteredQuotes, setting);
     }
 

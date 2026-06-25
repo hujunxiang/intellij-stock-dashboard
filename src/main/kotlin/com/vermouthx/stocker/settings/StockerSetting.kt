@@ -10,6 +10,7 @@ import com.vermouthx.stocker.enums.StockerQuoteColorPattern
 import com.vermouthx.stocker.enums.StockerQuoteProvider
 import com.vermouthx.stocker.enums.StockerTableColumn
 import com.vermouthx.stocker.utils.StockerPinyinUtil
+import java.util.Collections
 
 @State(name = "StockerPlus", storages = [Storage("stocker-plus-config.xml")])
 class StockerSetting : PersistentStateComponent<StockerSettingState> {
@@ -379,6 +380,90 @@ class StockerSetting : PersistentStateComponent<StockerSettingState> {
                     cryptoList.remove(code)
                 }
             }
+        }
+    }
+
+    fun marketListOf(code: String): MutableList<String>? {
+        if (aShareList.contains(code)) return aShareList
+        if (hkStocksList.contains(code)) return hkStocksList
+        if (usStocksList.contains(code)) return usStocksList
+        if (cryptoList.contains(code)) return cryptoList
+        return null
+    }
+
+    fun marketPinToTop(code: String) {
+        val list = marketListOf(code) ?: return
+        synchronized(list) {
+            val idx = list.indexOf(code)
+            if (idx > 0) {
+                list.removeAt(idx)
+                list.add(0, code)
+            }
+        }
+    }
+
+    fun marketPinToBottom(code: String) {
+        val list = marketListOf(code) ?: return
+        synchronized(list) {
+            val idx = list.indexOf(code)
+            if (idx in 0 until list.size - 1) {
+                list.removeAt(idx)
+                list.add(code)
+            }
+        }
+    }
+
+    fun marketMoveUp(code: String) {
+        val list = marketListOf(code) ?: return
+        synchronized(list) {
+            val idx = list.indexOf(code)
+            if (idx > 0) {
+                Collections.swap(list, idx, idx - 1)
+            }
+        }
+    }
+
+    fun marketMoveDown(code: String) {
+        val list = marketListOf(code) ?: return
+        synchronized(list) {
+            val idx = list.indexOf(code)
+            if (idx in 0 until list.size - 1) {
+                Collections.swap(list, idx, idx + 1)
+            }
+        }
+    }
+
+    fun groupPinToTop(groupName: String, code: String) {
+        val list = stockGroupMap[groupName] ?: return
+        val idx = list.indexOf(code)
+        if (idx > 0) {
+            list.removeAt(idx)
+            list.add(0, code)
+        }
+    }
+
+    fun groupPinToBottom(groupName: String, code: String) {
+        val list = stockGroupMap[groupName] ?: return
+        val idx = list.indexOf(code)
+        if (idx in 0 until list.size - 1) {
+            list.removeAt(idx)
+            list.add(code)
+        }
+    }
+
+    fun groupMoveUp(groupName: String, code: String) {
+        val list = stockGroupMap[groupName] ?: return
+        val idx = list.indexOf(code)
+        if (idx > 0) {
+            Collections.swap(list, idx, idx - 1)
+        }
+    }
+
+    fun groupMoveDown(groupName: String, code: String) {
+        val list = stockGroupMap[groupName] ?: return
+        val idx = list.indexOf(code)
+        if (idx in 0 until list.size - 1) {
+            Collections.swap(list, idx, idx + 1)
         }
     }
 

@@ -133,6 +133,8 @@ class StockerToolWindow : ToolWindowFactory {
                 btn.isFocusPainted = false
                 btn.addActionListener {
                     setting.lastSelectedGroup = name ?: ""
+                    allView.tableView.setLastActiveGroupFilter(name)
+                    tabViewMap.values.forEach { it.tableView.setLastActiveGroupFilter(name) }
                     allUpdateListeners.forEach { l ->
                         l.setGroupFilter(name)
                         l.refreshGroupFilter()
