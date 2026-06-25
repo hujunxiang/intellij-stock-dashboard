@@ -20,6 +20,7 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     private volatile String groupFilter = null; // null = show all
     private volatile List<StockerQuote> storedQuotes = new CopyOnWriteArrayList<>();
     private final java.util.Map<String, Double> lastNotifiedPct = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, Double> lastFetchedPrice = new java.util.concurrent.ConcurrentHashMap<>();
 
     public void setGroupFilter(String groupFilter) {
         this.groupFilter = (groupFilter != null && !groupFilter.isEmpty()) ? groupFilter : null;
@@ -208,22 +209,27 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
 
         for (StockerQuote quote : quotes) {
             String code = quote.getCode();
-            double pct = quote.getPercentage();
+            double currentPrice = quote.getCurrent();
+            Double prevPrice = lastFetchedPrice.get(code);
+            lastFetchedPrice.put(code, currentPrice);
+
+            if (prevPrice == null || prevPrice == 0) continue; // First fetch, no previous price to compare
+
+            double pct = (currentPrice - prevPrice) / prevPrice * 100;
 
             if (rise > 0 && pct >= rise) {
                 Double lastPct = lastNotifiedPct.get(code);
-                if (lastPct != null && Math.abs(lastPct - pct) < 0.01) continue; // Same data, skip
+                if (lastPct != null && Math.abs(lastPct - pct) < 0.01) continue;
                 lastNotifiedPct.put(code, pct);
                 riseItems.add(String.format("<span style='color:%s'>&#x25B2; %s <b>+%s%%</b></span>",
                         riseColor, quote.getName(), String.format("%.2f", pct)));
             } else if (fall < 0 && pct <= fall) {
                 Double lastPct = lastNotifiedPct.get(code);
-                if (lastPct != null && Math.abs(lastPct - pct) < 0.01) continue; // Same data, skip
+                if (lastPct != null && Math.abs(lastPct - pct) < 0.01) continue;
                 lastNotifiedPct.put(code, pct);
                 fallItems.add(String.format("<span style='color:%s'>&#x25BC; %s <b>%s%%</b></span>",
                         fallColor, quote.getName(), String.format("%.2f", pct)));
             } else {
-                // No longer triggered, remove from tracking so it can trigger again later
                 lastNotifiedPct.remove(code);
             }
         }
