@@ -77,6 +77,7 @@ public class StockerTableView implements Disposable {
     private JMenuItem miPinToBottom;
     private JMenuItem miMoveUp;
     private JMenuItem miMoveDown;
+    private JMenu moveToGroupMenu;
 
     private volatile boolean disposed = false;
 
@@ -435,6 +436,9 @@ public class StockerTableView implements Disposable {
         miMoveUp.addActionListener(e -> handleReorder("moveUp"));
         miMoveDown.addActionListener(e -> handleReorder("moveDown"));
 
+        JMenu moveToGroupMenu = new JMenu(StockerBundle.message("popup.move.to.group"));
+        this.moveToGroupMenu = moveToGroupMenu;
+
         JMenuItem deleteMenuItem = createStyledMenuItem("Delete");
         deleteMenuItem.addActionListener(e -> deleteSelectedStock());
 
@@ -445,12 +449,15 @@ public class StockerTableView implements Disposable {
         popupMenu.add(miMoveUp);
         popupMenu.add(miMoveDown);
         popupMenu.add(new JSeparator());
+        popupMenu.add(moveToGroupMenu);
+        popupMenu.add(new JSeparator());
         popupMenu.add(deleteMenuItem);
 
         popupMenu.addPopupMenuListener(new PopupMenuListener() {
             @Override
             public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
                 updateReorderMenuItems();
+                rebuildMoveToGroupMenu();
             }
 
             @Override
@@ -561,6 +568,48 @@ public class StockerTableView implements Disposable {
 
         tbBody.setRowSelectionInterval(targetRow, targetRow);
         tbBody.scrollRectToVisible(tbBody.getCellRect(targetRow, 0, true));
+    }
+
+    private void rebuildMoveToGroupMenu() {
+        moveToGroupMenu.removeAll();
+        String code = popupTargetCode;
+        if (code == null) {
+            moveToGroupMenu.setEnabled(false);
+            return;
+        }
+        moveToGroupMenu.setEnabled(true);
+        StockerSetting setting = StockerSetting.Companion.getInstance();
+        String currentGroup = setting.getStockGroup(code);
+
+        if (currentGroup != null) {
+            JMenuItem ungroupItem = createStyledMenuItem(StockerBundle.message("popup.ungroup"));
+            ungroupItem.addActionListener(e -> {
+                setting.removeStockFromGroup(code);
+                if (lastActiveGroupFilter != null) {
+                    int row = tbBody.getSelectedRow();
+                    if (row >= 0) tbModel.removeRow(row);
+                }
+            });
+            moveToGroupMenu.add(ungroupItem);
+            moveToGroupMenu.add(new JSeparator());
+        }
+
+        for (String groupName : setting.getStockGroupNames()) {
+            boolean isCurrent = groupName.equals(currentGroup);
+            JMenuItem groupItem = createStyledMenuItem(groupName);
+            groupItem.setEnabled(!isCurrent);
+            if (isCurrent) {
+                groupItem.setFont(groupItem.getFont().deriveFont(java.awt.Font.BOLD));
+            }
+            groupItem.addActionListener(e -> {
+                setting.assignStockToGroup(code, groupName);
+                if (lastActiveGroupFilter != null) {
+                    int row = tbBody.getSelectedRow();
+                    if (row >= 0) tbModel.removeRow(row);
+                }
+            });
+            moveToGroupMenu.add(groupItem);
+        }
     }
 
     private void deleteSelectedStock() {
