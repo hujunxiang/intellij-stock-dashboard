@@ -1,9 +1,7 @@
 package com.vermouthx.stocker.activities
 
-import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -53,9 +51,8 @@ class StockerStartupActivity : ProjectActivity, DumbAware {
     private fun checkForPluginUpdate(project: Project) {
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                val pluginId = PluginId.getId("com.huly.stocker-plus")
-                val installedDescriptor = PluginManagerCore.getPlugin(pluginId) ?: return@executeOnPooledThread
-                val installedVersion = installedDescriptor.version
+                val installedVersion = StockerMeta.currentVersion
+                if (installedVersion.isEmpty()) return@executeOnPooledThread
 
                 // Step 1: Get numeric plugin ID from Marketplace search API
                 val searchUrl = java.net.URI("https://plugins.jetbrains.com/api/searchPlugins?search=StockerPlus&size=1").toURL()
