@@ -11,8 +11,8 @@ class StockerRefreshAction : AnAction() {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val presentation = e.presentation
-        presentation.text = StockerBundle.message("action.refresh")
-        presentation.description = StockerBundle.message("action.refresh.description")
+        presentation.text = StockerBundle.msg("action.refresh")
+        presentation.description = StockerBundle.msg("action.refresh.description")
         presentation.isEnabled = project != null
     }
 

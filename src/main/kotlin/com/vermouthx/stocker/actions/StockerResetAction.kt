@@ -11,8 +11,8 @@ class StockerResetAction : AnAction() {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val presentation = e.presentation
-        presentation.text = StockerBundle.message("action.remove.all.favorite.stocks")
-        presentation.description = StockerBundle.message("action.remove.all.favorite.stocks.description")
+        presentation.text = StockerBundle.msg("action.remove.all.favorite.stocks")
+        presentation.description = StockerBundle.msg("action.remove.all.favorite.stocks.description")
         presentation.isEnabled = project != null
     }
 

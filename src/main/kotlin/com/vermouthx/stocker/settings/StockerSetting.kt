@@ -185,6 +185,13 @@ class StockerSetting : PersistentStateComponent<StockerSettingState> {
     }
 
     fun removeGroup(name: String) {
+        val codes = stockGroupMap[name] ?: emptyList()
+        for (code in codes.toList()) {
+            val market = marketOf(code)
+            if (market != null) {
+                removeCode(market, code)
+            }
+        }
         stockGroupNames.remove(name)
         stockGroupMap.remove(name)
         if (lastSelectedGroup == name) lastSelectedGroup = ""

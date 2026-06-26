@@ -10,8 +10,8 @@ class StockerStockSearchAction : AnAction() {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val presentation = e.presentation
-        presentation.text = StockerBundle.message("action.add.favorite.stocks")
-        presentation.description = StockerBundle.message("action.add.favorite.stocks.description")
+        presentation.text = StockerBundle.msg("action.add.favorite.stocks")
+        presentation.description = StockerBundle.msg("action.add.favorite.stocks.description")
         presentation.isEnabled = project != null
     }
 

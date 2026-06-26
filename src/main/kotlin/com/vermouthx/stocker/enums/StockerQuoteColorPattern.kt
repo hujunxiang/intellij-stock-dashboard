@@ -8,5 +8,5 @@ enum class StockerQuoteColorPattern(val titleKey: String) {
     NONE("color.pattern.none");
 
     val title: String
-        get() = StockerBundle.message(titleKey)
+        get() = StockerBundle.msg(titleKey)
 }

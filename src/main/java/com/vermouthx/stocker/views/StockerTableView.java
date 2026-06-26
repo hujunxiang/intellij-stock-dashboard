@@ -422,10 +422,10 @@ public class StockerTableView implements Disposable {
             }
         });
 
-        JMenuItem miPinToTop = createStyledMenuItem(StockerBundle.message("popup.pin.to.top"));
-        JMenuItem miPinToBottom = createStyledMenuItem(StockerBundle.message("popup.pin.to.bottom"));
-        JMenuItem miMoveUp = createStyledMenuItem(StockerBundle.message("popup.move.up"));
-        JMenuItem miMoveDown = createStyledMenuItem(StockerBundle.message("popup.move.down"));
+        JMenuItem miPinToTop = createStyledMenuItem(StockerBundle.msg("popup.pin.to.top"));
+        JMenuItem miPinToBottom = createStyledMenuItem(StockerBundle.msg("popup.pin.to.bottom"));
+        JMenuItem miMoveUp = createStyledMenuItem(StockerBundle.msg("popup.move.up"));
+        JMenuItem miMoveDown = createStyledMenuItem(StockerBundle.msg("popup.move.down"));
         this.miPinToTop = miPinToTop;
         this.miPinToBottom = miPinToBottom;
         this.miMoveUp = miMoveUp;
@@ -436,10 +436,10 @@ public class StockerTableView implements Disposable {
         miMoveUp.addActionListener(e -> handleReorder("moveUp"));
         miMoveDown.addActionListener(e -> handleReorder("moveDown"));
 
-        JMenu moveToGroupMenu = new JMenu(StockerBundle.message("popup.move.to.group"));
+        JMenu moveToGroupMenu = new JMenu(StockerBundle.msg("popup.move.to.group"));
         this.moveToGroupMenu = moveToGroupMenu;
 
-        JMenuItem deleteMenuItem = createStyledMenuItem("Delete");
+        JMenuItem deleteMenuItem = createStyledMenuItem(StockerBundle.msg("popup.delete"));
         deleteMenuItem.addActionListener(e -> deleteSelectedStock());
 
         popupMenu.add(f10MenuItem);
@@ -486,7 +486,7 @@ public class StockerTableView implements Disposable {
         StockerSetting setting = StockerSetting.Companion.getInstance();
         String currentGroup = lastActiveGroupFilter;
 
-        if (currentGroup != null) {
+        if (currentGroup != null && !currentGroup.isEmpty()) {
             java.util.List<String> groupCodes = setting.getGroupStocks(currentGroup);
             int idx = groupCodes.indexOf(code);
             if (idx < 0) {
@@ -529,7 +529,7 @@ public class StockerTableView implements Disposable {
         StockerSetting setting = StockerSetting.Companion.getInstance();
         String currentGroup = lastActiveGroupFilter;
 
-        if (currentGroup != null) {
+        if (currentGroup != null && !currentGroup.isEmpty()) {
             switch (action) {
                 case "pinToTop":    setting.groupPinToTop(currentGroup, code); break;
                 case "pinToBottom": setting.groupPinToBottom(currentGroup, code); break;
@@ -582,10 +582,10 @@ public class StockerTableView implements Disposable {
         String currentGroup = setting.getStockGroup(code);
 
         if (currentGroup != null) {
-            JMenuItem ungroupItem = createStyledMenuItem(StockerBundle.message("popup.ungroup"));
+            JMenuItem ungroupItem = createStyledMenuItem(StockerBundle.msg("popup.ungroup"));
             ungroupItem.addActionListener(e -> {
                 setting.removeStockFromGroup(code);
-                if (lastActiveGroupFilter != null) {
+                if (lastActiveGroupFilter != null && !lastActiveGroupFilter.isEmpty()) {
                     int row = tbBody.getSelectedRow();
                     if (row >= 0) tbModel.removeRow(row);
                 }
@@ -603,7 +603,7 @@ public class StockerTableView implements Disposable {
             }
             groupItem.addActionListener(e -> {
                 setting.assignStockToGroup(code, groupName);
-                if (lastActiveGroupFilter != null) {
+                if (lastActiveGroupFilter != null && !lastActiveGroupFilter.isEmpty()) {
                     int row = tbBody.getSelectedRow();
                     if (row >= 0) tbModel.removeRow(row);
                 }

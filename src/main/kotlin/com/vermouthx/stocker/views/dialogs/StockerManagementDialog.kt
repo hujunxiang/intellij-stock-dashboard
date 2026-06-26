@@ -43,7 +43,6 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
 
     init {
         title = "Manage Favorite Stocks By Groups"
-        setting.ensureGroupsMigrated()
         init()
     }
 
@@ -137,13 +136,13 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         val btnPanel = JPanel()
         btnPanel.layout = BoxLayout(btnPanel, BoxLayout.Y_AXIS)
 
-        val addGroupBtn = JButton(StockerBundle.message("manage.group.add"))
+        val addGroupBtn = JButton(StockerBundle.msg("manage.group.add"))
         addGroupBtn.alignmentX = java.awt.Component.LEFT_ALIGNMENT
         addGroupBtn.addActionListener {
             val name = Messages.showInputDialog(
                 list,
-                StockerBundle.message("manage.group.add.prompt"),
-                StockerBundle.message("manage.group.add.title"),
+                StockerBundle.msg("manage.group.add.prompt"),
+                StockerBundle.msg("manage.group.add.title"),
                 Messages.getQuestionIcon()
             )
             if (!name.isNullOrBlank()) {
@@ -158,14 +157,14 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
             }
         }
 
-        val deleteGroupBtn = JButton(StockerBundle.message("manage.group.delete"))
+        val deleteGroupBtn = JButton(StockerBundle.msg("manage.group.delete"))
         deleteGroupBtn.alignmentX = java.awt.Component.LEFT_ALIGNMENT
         deleteGroupBtn.addActionListener {
             if (selectedGroup == null) return@addActionListener
             val result = Messages.showYesNoDialog(
                 list,
-                StockerBundle.message("manage.group.delete.confirm", selectedGroup!!),
-                StockerBundle.message("manage.group.delete"),
+                StockerBundle.msg("manage.group.delete.confirm", selectedGroup!!),
+                StockerBundle.msg("manage.group.delete"),
                 Messages.getQuestionIcon()
             )
             if (result == Messages.YES) {
@@ -178,14 +177,14 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
             }
         }
 
-        val clearGroupBtn = JButton(StockerBundle.message("manage.clear.group"))
+        val clearGroupBtn = JButton(StockerBundle.msg("manage.clear.group"))
         clearGroupBtn.alignmentX = java.awt.Component.LEFT_ALIGNMENT
         clearGroupBtn.addActionListener {
             if (selectedGroup == null) return@addActionListener
             val result = Messages.showYesNoDialog(
                 list,
-                StockerBundle.message("manage.clear.group.confirm", selectedGroup!!),
-                StockerBundle.message("manage.clear.group"),
+                StockerBundle.msg("manage.clear.group.confirm", selectedGroup!!),
+                StockerBundle.msg("manage.clear.group"),
                 Messages.getWarningIcon()
             )
             if (result == Messages.YES) {
@@ -205,13 +204,13 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
             }
         }
 
-        val clearAllBtn = JButton(StockerBundle.message("manage.clear.all"))
+        val clearAllBtn = JButton(StockerBundle.msg("manage.clear.all"))
         clearAllBtn.alignmentX = java.awt.Component.LEFT_ALIGNMENT
         clearAllBtn.addActionListener {
             val result = Messages.showYesNoDialog(
                 list,
-                StockerBundle.message("manage.clear.all.confirm"),
-                StockerBundle.message("manage.clear.all"),
+                StockerBundle.msg("manage.clear.all.confirm"),
+                StockerBundle.msg("manage.clear.all"),
                 Messages.getWarningIcon()
             )
             if (result == Messages.YES) {
@@ -242,8 +241,8 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         val oldName = names[idx]
         val newName = Messages.showInputDialog(
             list,
-            StockerBundle.message("manage.group.rename.prompt"),
-            StockerBundle.message("manage.group.rename.title"),
+            StockerBundle.msg("manage.group.rename.prompt"),
+            StockerBundle.msg("manage.group.rename.title"),
             Messages.getQuestionIcon(),
             oldName,
             null
@@ -258,8 +257,8 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
             } else {
                 Messages.showErrorDialog(
                     list,
-                    StockerBundle.message("manage.group.rename.duplicate"),
-                    StockerBundle.message("manage.group.rename.title")
+                    StockerBundle.msg("manage.group.rename.duplicate"),
+                    StockerBundle.msg("manage.group.rename.title")
                 )
             }
         }
@@ -271,14 +270,14 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         list.selectedIndex = idx
 
         val popup = JPopupMenu()
-        val renameItem = JMenuItem(StockerBundle.message("manage.group.rename"))
+        val renameItem = JMenuItem(StockerBundle.msg("manage.group.rename"))
         renameItem.addActionListener { renameGroup(list, idx) }
         popup.add(renameItem)
         popup.show(list, e.x, e.y)
     }
 
     private fun getGroupDisplayNames(): List<String> {
-        val names = mutableListOf(StockerBundle.message("manage.group.all"))
+        val names = mutableListOf(StockerBundle.msg("manage.group.all"))
         names.addAll(setting.stockGroupNames)
         return names
     }
@@ -546,13 +545,6 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
 
         val decorator = ToolbarDecorator.createDecorator(list)
             .setAddAction { _ ->
-                val targetGroup = selectedGroup ?: "默认"
-                setting.lastSelectedGroup = targetGroup
-                setting.ensureGroupsMigrated()
-                if (!setting.stockGroupNames.contains(targetGroup)) {
-                    setting.addGroup(targetGroup)
-                    refreshGroupList()
-                }
                 val searchDialog = StockerSuggestionDialog(project)
                 searchDialog.show()
                 reloadAllTabs()

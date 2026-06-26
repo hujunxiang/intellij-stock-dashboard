@@ -11,8 +11,8 @@ class StockerStopAction : AnAction() {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val presentation = e.presentation
-        presentation.text = StockerBundle.message("action.stop.refresh")
-        presentation.description = StockerBundle.message("action.stop.refresh.description")
+        presentation.text = StockerBundle.msg("action.stop.refresh")
+        presentation.description = StockerBundle.msg("action.stop.refresh.description")
         presentation.isEnabled = project != null && StockerAppManager.myApplication(project)?.isShutdown() == false
     }
 

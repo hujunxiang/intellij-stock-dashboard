@@ -12,8 +12,8 @@ class StockerRestartAction : AnAction() {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val presentation = e.presentation
-        presentation.text = StockerBundle.message("action.restart")
-        presentation.description = StockerBundle.message("action.restart.description")
+        presentation.text = StockerBundle.msg("action.restart")
+        presentation.description = StockerBundle.msg("action.restart.description")
         presentation.isEnabled = project != null
     }
 

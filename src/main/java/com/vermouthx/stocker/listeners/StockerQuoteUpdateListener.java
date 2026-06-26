@@ -23,7 +23,7 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     private final java.util.Map<String, Double> lastFetchedPrice = new java.util.concurrent.ConcurrentHashMap<>();
 
     public void setGroupFilter(String groupFilter) {
-        this.groupFilter = (groupFilter != null && !groupFilter.isEmpty()) ? groupFilter : null;
+        this.groupFilter = groupFilter;
     }
 
     /**
@@ -84,7 +84,42 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
         String currentGroup = groupFilter;
         final List<StockerQuote> filteredQuotes;
 
-        if (currentGroup != null) {
+        if (currentGroup != null && currentGroup.isEmpty()) {
+            // "全部": aggregate all groups, deduplicate, preserve order
+            java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+            for (String groupName : setting.getStockGroupNames()) {
+                seen.addAll(setting.getGroupStocks(groupName));
+            }
+            List<String> allCodes = new java.util.ArrayList<>(seen);
+            java.util.Map<String, Integer> position = new java.util.HashMap<>();
+            for (int i = 0; i < allCodes.size(); i++) {
+                position.put(allCodes.get(i), i);
+            }
+            filteredQuotes = quotes.stream()
+                    .filter(q -> position.containsKey(q.getCode()))
+                    .sorted((q1, q2) -> Integer.compare(
+                            position.getOrDefault(q1.getCode(), Integer.MAX_VALUE),
+                            position.getOrDefault(q2.getCode(), Integer.MAX_VALUE)))
+                    .collect(Collectors.toList());
+
+            synchronized (tableModel) {
+                tableModel.setRowCount(0);
+                for (StockerQuote quote : filteredQuotes) {
+                    Double costPrice = setting.getCostPrice(quote.getCode());
+                    Integer holdings = setting.getHoldings(quote.getCode());
+                    String displayName = setting.getDisplayName(quote.getCode(), quote.getName());
+                    tableModel.addRow(new Object[]{
+                            quote.getCode(), displayName,
+                            quote.getCurrent(), quote.getOpening(), quote.getClose(),
+                            quote.getLow(), quote.getHigh(),
+                            quote.getChange(), quote.getPercentage() + "%",
+                            formatCostPrice(costPrice), formatHoldings(holdings),
+                            formatNetProfit(quote, costPrice, holdings),
+                            formatDailyProfit(quote, holdings)
+                    });
+                }
+            }
+        } else if (currentGroup != null) {
             List<String> groupCodes = setting.getGroupStocks(currentGroup);
             java.util.Map<String, Integer> groupPosition = new java.util.HashMap<>();
             for (int i = 0; i < groupCodes.size(); i++) {
@@ -265,7 +300,7 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
         for (String item : fallItems) html.append(item).append("<br>");
         html.append("</body></html>");
 
-        String title = StockerBundle.message("alert.title");
+        String title = StockerBundle.msg("alert.title");
 
         try {
             com.intellij.notification.Notification notification = NotificationGroupManager.getInstance()

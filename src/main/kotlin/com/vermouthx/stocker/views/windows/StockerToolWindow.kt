@@ -118,7 +118,23 @@ class StockerToolWindow : ToolWindowFactory {
     private fun createGroupPanel(): JPanel {
         val setting = StockerSetting.instance
         val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 4))
-        val buttons = mutableListOf<JButton>()
+        val buttons = mutableListOf<javax.swing.JButton>()
+
+        val selectedBg = java.awt.Color(70, 130, 220)
+        val defaultBg = javax.swing.UIManager.getColor("Button.background")
+                ?: javax.swing.UIManager.getColor("Panel.background")
+                ?: java.awt.Color(200, 200, 200)
+
+        fun updateButtonSelection() {
+            val selectedGroup = setting.lastSelectedGroup
+            buttons.forEach { btn ->
+                val name = btn.getClientProperty("group.name") as? String?
+                val isActive = (name == null && selectedGroup.isEmpty()) ||
+                        (name == selectedGroup)
+                btn.background = if (isActive) selectedBg else defaultBg
+                btn.foreground = if (isActive) java.awt.Color.WHITE else javax.swing.UIManager.getColor("Button.foreground")
+            }
+        }
 
         fun buildGroupButtons() {
             buttonPanel.removeAll()
@@ -128,30 +144,37 @@ class StockerToolWindow : ToolWindowFactory {
             groupNames.addAll(setting.stockGroupNames)
 
             for (name in groupNames) {
-                val displayName = name ?: StockerBundle.message("manage.group.all")
-                val btn = JButton(displayName)
+                val displayName = name ?: StockerBundle.msg("manage.group.all")
+                val btn = object : javax.swing.JButton(displayName) {
+                    override fun paintComponent(g: java.awt.Graphics) {
+                        val name = getClientProperty("group.name") as? String?
+                        val selectedGroup = setting.lastSelectedGroup
+                        val isActive = (name == null && selectedGroup.isEmpty()) ||
+                                (name == selectedGroup)
+                        background = if (isActive) selectedBg else defaultBg
+                        foreground = if (isActive) java.awt.Color.WHITE else javax.swing.UIManager.getColor("Button.foreground")
+                        super.paintComponent(g)
+                    }
+                }
                 btn.isFocusPainted = false
+                btn.isContentAreaFilled = true
+                btn.isBorderPainted = false
+                btn.putClientProperty("group.name", name)
                 btn.addActionListener {
                     setting.lastSelectedGroup = name ?: ""
-                    allView.tableView.setLastActiveGroupFilter(name)
-                    tabViewMap.values.forEach { it.tableView.setLastActiveGroupFilter(name) }
+                    val filterValue = name ?: ""
+                    allView.tableView.setLastActiveGroupFilter(filterValue)
+                    tabViewMap.values.forEach { it.tableView.setLastActiveGroupFilter(filterValue) }
                     allUpdateListeners.forEach { l ->
-                        l.setGroupFilter(name)
+                        l.setGroupFilter(filterValue)
                         l.refreshGroupFilter()
                     }
-                    buttons.forEach { b ->
-                        b.font = b.font.deriveFont(java.awt.Font.PLAIN)
-                    }
-                    btn.font = btn.font.deriveFont(java.awt.Font.BOLD)
-                }
-                val isSelected = (name == null && setting.lastSelectedGroup.isEmpty()) ||
-                        (name == setting.lastSelectedGroup)
-                if (isSelected) {
-                    btn.font = btn.font.deriveFont(java.awt.Font.BOLD)
+                    updateButtonSelection()
                 }
                 buttons.add(btn)
                 buttonPanel.add(btn)
             }
+            updateButtonSelection()
 
             buttonPanel.revalidate()
             buttonPanel.repaint()

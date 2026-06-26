@@ -16,7 +16,7 @@ import com.vermouthx.stocker.views.StockerTableView
 import javax.swing.JCheckBox
 import javax.swing.JLabel
 
-class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.name")) {
+class StockerSettingWindow : BoundConfigurable(StockerBundle.msg("plugin.name")) {
 
     private val setting = StockerSetting.instance
 
@@ -65,9 +65,9 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
         private val LANGUAGE_CODES = listOf("", "en", "zh_CN")
 
         private fun languageDisplayName(code: String): String = when (code) {
-            "" -> StockerBundle.message("settings.language.system")
-            "en" -> StockerBundle.message("settings.language.english")
-            "zh_CN" -> StockerBundle.message("settings.language.chinese")
+            "" -> StockerBundle.msg("settings.language.system")
+            "en" -> StockerBundle.msg("settings.language.english")
+            "zh_CN" -> StockerBundle.msg("settings.language.chinese")
             else -> code
         }
     }
@@ -77,9 +77,9 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
         val languageRenderer = textListCellRenderer { value: String? -> languageDisplayName(value ?: "") }
 
         return panel {
-            group(StockerBundle.message("settings.group.general")) {
+            group(StockerBundle.msg("settings.group.general")) {
                 row {
-                    label(StockerBundle.message("settings.language"))
+                    label(StockerBundle.msg("settings.language"))
                         .widthGroup("labels")
                     comboBox(LANGUAGE_CODES, languageRenderer)
                         .bindItem(
@@ -87,14 +87,14 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                             { languageOverride = it ?: "" }
                         )
                         .widthGroup("comboboxes")
-                        .comment(StockerBundle.message("settings.language.comment"))
+                        .comment(StockerBundle.msg("settings.language.comment"))
                 }.layout(RowLayout.LABEL_ALIGNED)
 
                 row {
-                    label(StockerBundle.message("settings.refresh.interval"))
+                    label(StockerBundle.msg("settings.refresh.interval"))
                         .widthGroup("labels")
                     comboBox((1L..10L).toList(), textListCellRenderer { value: Long? ->
-                        if (value != null) StockerBundle.message("settings.refresh.interval.seconds", value) else ""
+                        if (value != null) StockerBundle.msg("settings.refresh.interval.seconds", value) else ""
                     })
                         .bindItem(
                             { refreshInterval },
@@ -104,13 +104,13 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 }.layout(RowLayout.LABEL_ALIGNED)
 
                 row {
-                    label(StockerBundle.message("settings.alert.rise"))
+                    label(StockerBundle.msg("settings.alert.rise"))
                         .widthGroup("labels")
                     comboBox(listOf(0) + (1..10).toList(), textListCellRenderer { value: Int? ->
                         if (value != null && value > 0) {
-                            StockerBundle.message("settings.alert.rise.value", value)
+                            StockerBundle.msg("settings.alert.rise.value", value)
                         } else {
-                            StockerBundle.message("settings.alert.rise.disabled")
+                            StockerBundle.msg("settings.alert.rise.disabled")
                         }
                     })
                         .bindItem(
@@ -121,13 +121,13 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 }.layout(RowLayout.LABEL_ALIGNED)
 
                 row {
-                    label(StockerBundle.message("settings.alert.fall"))
+                    label(StockerBundle.msg("settings.alert.fall"))
                         .widthGroup("labels")
                     comboBox(listOf(0) + (-1 downTo -10).toList(), textListCellRenderer { value: Int? ->
                         if (value != null && value < 0) {
-                            StockerBundle.message("settings.alert.fall.value", value)
+                            StockerBundle.msg("settings.alert.fall.value", value)
                         } else {
-                            StockerBundle.message("settings.alert.fall.disabled")
+                            StockerBundle.msg("settings.alert.fall.disabled")
                         }
                     })
                         .bindItem(
@@ -138,86 +138,86 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                 }.layout(RowLayout.LABEL_ALIGNED)
 
                 row {
-                    label(StockerBundle.message("settings.market.tabs"))
+                    label(StockerBundle.msg("settings.market.tabs"))
                         .widthGroup("labels")
                 }.layout(RowLayout.LABEL_ALIGNED)
 
                 indent {
                     row {
-                        checkBox(StockerBundle.message("settings.market.AShare"))
+                        checkBox(StockerBundle.msg("settings.market.AShare"))
                             .bindSelected(::showAShare.toMutableProperty())
                     }
                     row {
-                        checkBox(StockerBundle.message("settings.market.HKStocks"))
+                        checkBox(StockerBundle.msg("settings.market.HKStocks"))
                             .bindSelected(::showHKStocks.toMutableProperty())
                     }
                     row {
-                        checkBox(StockerBundle.message("settings.market.USStocks"))
+                        checkBox(StockerBundle.msg("settings.market.USStocks"))
                             .bindSelected(::showUSStocks.toMutableProperty())
                     }
                     row {
-                        checkBox(StockerBundle.message("settings.market.Crypto"))
+                        checkBox(StockerBundle.msg("settings.market.Crypto"))
                             .bindSelected(::showCrypto.toMutableProperty())
                     }
                 }
             }
 
-            group(StockerBundle.message("settings.group.data.provider")) {
+            group(StockerBundle.msg("settings.group.data.provider")) {
                 row {
-                    label(StockerBundle.message("settings.stock.quote.source"))
+                    label(StockerBundle.msg("settings.stock.quote.source"))
                         .widthGroup("labels")
                     comboBox(StockerQuoteProvider.entries.toList(), providerRenderer)
                         .bindItem(::selectedProvider.toNullableProperty())
                         .widthGroup("comboboxes")
-                        .comment(StockerBundle.message("settings.stock.quote.source.comment"))
+                        .comment(StockerBundle.msg("settings.stock.quote.source.comment"))
                 }.layout(RowLayout.LABEL_ALIGNED)
 
                 row {
-                    label(StockerBundle.message("settings.crypto.quote.source"))
+                    label(StockerBundle.msg("settings.crypto.quote.source"))
                         .widthGroup("labels")
                     comboBox(listOf(StockerQuoteProvider.SINA), providerRenderer)
                         .bindItem(::selectedCryptoProvider.toNullableProperty())
                         .widthGroup("comboboxes")
-                        .comment(StockerBundle.message("settings.crypto.quote.source.comment"))
+                        .comment(StockerBundle.msg("settings.crypto.quote.source.comment"))
                 }.layout(RowLayout.LABEL_ALIGNED)
             }
 
-            group(StockerBundle.message("settings.group.table.display")) {
+            group(StockerBundle.msg("settings.group.table.display")) {
                 buttonsGroup {
                     row {
-                        label(StockerBundle.message("settings.color.pattern"))
+                        label(StockerBundle.msg("settings.color.pattern"))
                             .widthGroup("labels")
                     }
                     indent {
                         row {
-                            radioButton(StockerBundle.message("settings.color.pattern.red.up"), StockerQuoteColorPattern.RED_UP_GREEN_DOWN)
-                                .comment(StockerBundle.message("settings.color.pattern.red.up.comment"))
+                            radioButton(StockerBundle.msg("settings.color.pattern.red.up"), StockerQuoteColorPattern.RED_UP_GREEN_DOWN)
+                                .comment(StockerBundle.msg("settings.color.pattern.red.up.comment"))
                         }
                         row {
-                            radioButton(StockerBundle.message("settings.color.pattern.green.up"), StockerQuoteColorPattern.GREEN_UP_RED_DOWN)
-                                .comment(StockerBundle.message("settings.color.pattern.green.up.comment"))
+                            radioButton(StockerBundle.msg("settings.color.pattern.green.up"), StockerQuoteColorPattern.GREEN_UP_RED_DOWN)
+                                .comment(StockerBundle.msg("settings.color.pattern.green.up.comment"))
                         }
                         row {
-                            radioButton(StockerBundle.message("settings.color.pattern.none"), StockerQuoteColorPattern.NONE)
-                                .comment(StockerBundle.message("settings.color.pattern.none.comment"))
+                            radioButton(StockerBundle.msg("settings.color.pattern.none"), StockerQuoteColorPattern.NONE)
+                                .comment(StockerBundle.msg("settings.color.pattern.none.comment"))
                         }
                     }
                 }.bind(::colorPattern.toMutableProperty(), StockerQuoteColorPattern::class.java)
 
                 row {
-                    label(StockerBundle.message("settings.name.format"))
+                    label(StockerBundle.msg("settings.name.format"))
                         .widthGroup("labels")
                 }.layout(RowLayout.LABEL_ALIGNED)
 
                 indent {
                     row {
-                        checkBox(StockerBundle.message("settings.name.format.pinyin"))
+                        checkBox(StockerBundle.msg("settings.name.format.pinyin"))
                             .bindSelected(::displayNameWithPinyin.toMutableProperty())
-                    }.rowComment(StockerBundle.message("settings.name.format.pinyin.comment"))
+                    }.rowComment(StockerBundle.msg("settings.name.format.pinyin.comment"))
                 }
 
                 row {
-                    label(StockerBundle.message("settings.table.columns"))
+                    label(StockerBundle.msg("settings.table.columns"))
                         .widthGroup("labels")
                 }.layout(RowLayout.LABEL_ALIGNED)
 
@@ -327,7 +327,7 @@ class StockerSettingWindow : BoundConfigurable(StockerBundle.message("plugin.nam
                             .component
                     }
                     row {
-                        columnWarningLabel = label(StockerBundle.message("settings.table.columns.warning"))
+                        columnWarningLabel = label(StockerBundle.msg("settings.table.columns.warning"))
                             .applyToComponent {
                                 foreground = JBColor.RED
                                 isVisible = false

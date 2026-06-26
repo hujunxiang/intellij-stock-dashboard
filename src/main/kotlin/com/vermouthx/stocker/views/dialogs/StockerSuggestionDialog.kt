@@ -157,21 +157,26 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
 
         // Group selector
         modePanel.add(javax.swing.Box.createHorizontalStrut(16))
-        modePanel.add(JLabel(StockerBundle.message("manage.group.label")))
+        modePanel.add(JLabel(StockerBundle.msg("manage.group.label")))
+        val allLabel = StockerBundle.msg("manage.group.all")
         val groupNames = setting.stockGroupNames.toMutableList()
-        val groupComboBox = ComboBox(groupNames.toTypedArray())
+        val displayNames = mutableListOf(allLabel).apply { addAll(groupNames) }
+        val groupComboBox = ComboBox(displayNames.toTypedArray())
         if (setting.lastSelectedGroup.isNotEmpty() && groupNames.contains(setting.lastSelectedGroup)) {
-            groupComboBox.selectedIndex = groupNames.indexOf(setting.lastSelectedGroup)
+            groupComboBox.selectedIndex = groupNames.indexOf(setting.lastSelectedGroup) + 1
             selectedGroup = setting.lastSelectedGroup
-        } else if (groupNames.isNotEmpty()) {
+        } else {
             groupComboBox.selectedIndex = 0
-            selectedGroup = groupNames[0]
+            selectedGroup = null
         }
         groupComboBox.addActionListener {
             val idx = groupComboBox.selectedIndex
-            if (idx >= 0 && idx < groupNames.size) {
-                selectedGroup = groupNames[idx]
-                setting.lastSelectedGroup = groupNames[idx]
+            if (idx == 0) {
+                selectedGroup = null
+                setting.lastSelectedGroup = ""
+            } else if (idx > 0 && idx - 1 < groupNames.size) {
+                selectedGroup = groupNames[idx - 1]
+                setting.lastSelectedGroup = groupNames[idx - 1]
             }
         }
         modePanel.add(groupComboBox)
@@ -268,7 +273,7 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
             val (market, normalizedCode) = normalizeCode(raw)
             try {
                 if (setting.containsCode(normalizedCode)) {
-                    results.add(BatchResult(raw, market, normalizedCode, true, "已存在"))
+                    results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.already.exists")))
                     continue
                 }
                 // Validate via HTTP
@@ -281,13 +286,13 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
                 if (valid) {
                     val suggest = StockerSuggestion(normalizedCode, normalizedCode, market)
                     StockerActionUtil.addStock(market, suggest, project, groupName)
-                    results.add(BatchResult(raw, market, normalizedCode, true, "添加成功"))
+                    results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.add.success")))
                 } else {
-                    results.add(BatchResult(raw, market, normalizedCode, false, "无效代码"))
+                    results.add(BatchResult(raw, market, normalizedCode, false, StockerBundle.msg("batch.invalid.code")))
                 }
             } catch (e: Exception) {
                 log.warn("Batch import failed for $raw", e)
-                results.add(BatchResult(raw, market, normalizedCode, false, "验证失败"))
+                results.add(BatchResult(raw, market, normalizedCode, false, StockerBundle.msg("batch.validation.failed")))
             }
         }
 

@@ -19,7 +19,7 @@ enum class StockerTableColumn(val titleKey: String) {
     DAILY_PROFIT("column.daily.profit");
 
     val title: String
-        get() = StockerBundle.message(titleKey)
+        get() = StockerBundle.msg(titleKey)
 
     companion object {
         @JvmStatic

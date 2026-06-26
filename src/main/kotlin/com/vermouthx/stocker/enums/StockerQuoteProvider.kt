@@ -35,7 +35,7 @@ enum class StockerQuoteProvider(
     );
 
     val title: String
-        get() = StockerBundle.message(titleKey)
+        get() = StockerBundle.msg(titleKey)
 
     companion object {
         fun fromTitle(title: String): StockerQuoteProvider {

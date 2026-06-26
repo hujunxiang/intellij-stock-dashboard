@@ -11,8 +11,8 @@ class StockerSettingAction : AnAction() {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val presentation = e.presentation
-        presentation.text = StockerBundle.message("action.settings")
-        presentation.description = StockerBundle.message("action.settings.description")
+        presentation.text = StockerBundle.msg("action.settings")
+        presentation.description = StockerBundle.msg("action.settings.description")
         presentation.isEnabled = project != null
     }
 

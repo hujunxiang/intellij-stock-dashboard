@@ -25,21 +25,19 @@ object StockerBundle : DynamicBundle(BUNDLE) {
         }
     }
 
-    private fun getLocalizedBundle(): ResourceBundle {
-        val locale = getPreferredLocale()
-        return ResourceBundle.getBundle(BUNDLE, locale, StockerBundle::class.java.classLoader)
+    private fun getBundle(): ResourceBundle {
+        return ResourceBundle.getBundle(BUNDLE, getPreferredLocale(), StockerBundle::class.java.classLoader)
     }
 
     @Nls
     @JvmStatic
-    fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any): String {
-        val bundle = getLocalizedBundle()
-        val template = bundle.getString(key)
+    fun msg(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any?): String {
+        val template = getBundle().getString(key)
         return if (params.isEmpty()) template else MessageFormat.format(template, *params)
     }
 
     @Nls
     @JvmStatic
-    fun messagePointer(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =
+    fun msgPointer(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any?) =
         getLazyMessage(key, *params)
 }
