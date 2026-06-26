@@ -7,7 +7,11 @@ import com.vermouthx.stocker.StockerAppManager
 import com.vermouthx.stocker.StockerBundle
 import com.vermouthx.stocker.settings.StockerSetting
 
-class StockerResetAction : AnAction() {
+class StockerResetAction : AnAction(
+    StockerBundle.msg("action.remove.all.favorite.stocks"),
+    StockerBundle.msg("action.remove.all.favorite.stocks.description"),
+    null
+) {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val presentation = e.presentation

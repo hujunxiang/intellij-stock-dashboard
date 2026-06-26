@@ -6,7 +6,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.vermouthx.stocker.StockerAppManager
 import com.vermouthx.stocker.StockerBundle
 
-class StockerStopAction : AnAction() {
+class StockerStopAction : AnAction(
+    StockerBundle.msg("action.stop.refresh"),
+    StockerBundle.msg("action.stop.refresh.description"),
+    null
+) {
 
     override fun update(e: AnActionEvent) {
         val project = e.project

@@ -49,24 +49,22 @@ object StockerNotification {
                 <ul style="margin: 0; padding-left: 18px;">
                     <li style="${Styles.LIST_ITEM}">✨ <strong>新功能</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>右键菜单新增股票排序：置顶/置底/上移/下移</li>
-                            <li>右键菜单新增「移动到分组」子菜单</li>
-                            <li>新增重启插件按钮</li>
-                            <li>启动时自动检查插件更新并提示升级</li>
+                            <li>右键菜单新增编辑股票功能：编辑成本价和持仓</li>
+                            <li>插件更新改为 IDE 内直接安装，不再跳转浏览器</li>
+                            <li>启动时自动检测新版本并提示更新</li>
                         </ul>
                     </li>
                     <li style="${Styles.LIST_ITEM}">🐛 <strong>修复</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>修复打开设置对话框时界面冻结 21 秒的问题</li>
-                            <li>修复关闭一个项目时其他项目行情不更新的问题</li>
-                            <li>修复涨跌幅提醒逻辑：改为与上次请求价比较</li>
-                            <li>修复语言切换后部分界面仍显示中文的问题</li>
-                            <li>修复删除分组时未同时删除分组内股票的问题</li>
+                            <li>修复工具窗口按钮悬浮提示不显示的问题</li>
+                            <li>修复白色主题下分组按钮文字不可见的问题</li>
+                            <li>修复分组管理界面列表选中无高亮的问题</li>
+                            <li>修复分组管理编辑界面文字不跟随语言设置的问题</li>
                         </ul>
                     </li>
                 </ul>
                 <div style="${Styles.INFO_BOX}">
-                    <p style="margin: 0; font-size: 12px;">💡 <strong>说明：</strong>右键点击表格中的股票即可使用排序和分组功能。</p>
+                    <p style="margin: 0; font-size: 12px;">💡 <strong>说明：</strong>右键点击表格中的股票即可使用编辑功能。插件更新将自动下载安装并重启 IDE。</p>
                 </div>
             </div>
         """.trimIndent() else """
@@ -76,24 +74,22 @@ object StockerNotification {
                 <ul style="margin: 0; padding-left: 18px;">
                     <li style="${Styles.LIST_ITEM}">✨ <strong>New Features</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>Right-click reorder: pin to top/bottom, move up/down</li>
-                            <li>Right-click "Move to Group" submenu</li>
-                            <li>Added restart plugin button</li>
-                            <li>Automatic plugin update notification on startup</li>
+                            <li>Right-click edit stock: modify cost price and holdings</li>
+                            <li>Plugin updates install directly in IDE without browser</li>
+                            <li>Automatic update notification on startup</li>
                         </ul>
                     </li>
                     <li style="${Styles.LIST_ITEM}">🐛 <strong>Bug Fixes</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>Fixed 21-second freeze when opening settings dialog</li>
-                            <li>Fixed other projects losing data when one project is closed</li>
-                            <li>Fixed price alert comparing against daily change instead of previous fetch</li>
-                            <li>Fixed language switching not applying to all UI elements</li>
-                            <li>Fixed delete group not removing stocks from market lists</li>
+                            <li>Fixed toolbar button tooltips not showing</li>
+                            <li>Fixed group button text invisible on light theme</li>
+                            <li>Fixed management dialog list selection highlight missing</li>
+                            <li>Fixed management dialog edit labels not following language</li>
                         </ul>
                     </li>
                 </ul>
                 <div style="${Styles.INFO_BOX}">
-                    <p style="margin: 0; font-size: 12px;">💡 <strong>Tip:</strong> Right-click a stock in the table to use reorder and grouping features.</p>
+                    <p style="margin: 0; font-size: 12px;">💡 <strong>Tip:</strong> Right-click a stock to edit it. Plugin updates will download, install, and restart the IDE automatically.</p>
                 </div>
             </div>
         """.trimIndent()
@@ -168,12 +164,35 @@ object StockerNotification {
         val notification = NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP_ID)
             .createNotification(title, content, NotificationType.INFORMATION)
         val updateAction = NotificationAction.createSimple(if (isChinese()) "🔄 更新插件" else "🔄 Update Plugin") {
-            BrowserUtil.browse("https://plugins.jetbrains.com/plugin/32417-stockerplus")
+            try {
+                triggerPluginUpdate()
+            } catch (e: Exception) {
+                BrowserUtil.browse("https://plugins.jetbrains.com/plugin/32417-stockerplus")
+            }
         }
         notification.addAction(updateAction)
         addNotificationActions(notification)
         notification.icon = notificationIcon
         notification.notify(project)
+    }
+
+    private fun triggerPluginUpdate() {
+        // Use IntelliJ's PluginDownloader to download and install the update in-IDE
+        val downloaderClass = Class.forName("com.intellij.openapi.updateSettings.impl.PluginDownloader")
+        val createMethod = downloaderClass.getMethod(
+            "createDownloader",
+            Long::class.javaPrimitiveType,
+            String::class.java,
+            String::class.java,
+            Boolean::class.javaPrimitiveType
+        )
+        val downloader = createMethod.invoke(null, 32417L, "", version, true)
+        if (downloader != null) {
+            val installMethod = downloaderClass.getMethod("installPluginAndUpdateOld")
+            installMethod.invoke(downloader)
+            // Prompt restart
+            com.intellij.openapi.application.ApplicationManager.getApplication().restart()
+        }
     }
 
     private fun addNotificationActions(notification: Notification) {

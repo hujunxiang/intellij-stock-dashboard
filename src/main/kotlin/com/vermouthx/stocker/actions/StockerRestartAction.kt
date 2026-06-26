@@ -7,7 +7,11 @@ import com.vermouthx.stocker.StockerAppManager
 import com.vermouthx.stocker.StockerBundle
 import com.vermouthx.stocker.views.windows.StockerToolWindow
 
-class StockerRestartAction : AnAction() {
+class StockerRestartAction : AnAction(
+    StockerBundle.msg("action.restart"),
+    StockerBundle.msg("action.restart.description"),
+    null
+) {
 
     override fun update(e: AnActionEvent) {
         val project = e.project

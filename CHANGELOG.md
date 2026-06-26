@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.0.2
+
+### ✨ New Features / 新功能
+
+- Added stock edit dialog via right-click: edit cost price and holdings / 右键菜单新增编辑股票功能：编辑成本价和持仓
+- Plugin update now installs directly in IDE instead of opening browser / 插件更新改为 IDE 内直接安装，不再跳转浏览器
+- Added automatic update notification on startup / 启动时自动检测新版本并提示更新
+
+### 🐛 Bug Fixes / 修复
+
+- Fixed group button tooltips not showing in tool window / 修复工具窗口按钮悬浮提示不显示的问题
+- Fixed group button text invisible on light theme / 修复白色主题下分组按钮文字不可见的问题
+- Fixed management dialog stock list selection highlight missing / 修复分组管理界面列表选中无高亮的问题
+- Fixed management dialog edit labels not following language setting / 修复分组管理编辑界面文字不跟随语言设置的问题
+- Fixed update notification showing when current version is newer / 修复当前版本更新时仍提示更新的问题
+- Fixed update Marketplace URL returning 404 / 修复更新链接跳转 404 的问题
+- Removed internal API usage (`PluginManagerCore.getPlugin`) / 移除内部 API 使用
+
 ## 2.0.1
 
 ### ✨ New Features / 新功能

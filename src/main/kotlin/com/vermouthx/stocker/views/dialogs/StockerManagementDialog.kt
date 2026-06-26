@@ -43,8 +43,10 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
     private var groupList: JBList<String>? = null
 
     init {
-        title = "Manage Favorite Stocks By Groups"
+        title = StockerBundle.msg("action.manage.favorite.stocks")
+        isModal = true
         init()
+        pack()
     }
 
     override fun createCenterPanel(): DialogPanel {
@@ -81,7 +83,9 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
             row {
                 cell(splitPane).align(AlignX.FILL).align(AlignY.FILL)
             }
-        }.withPreferredWidth(750).withPreferredHeight(450)
+        }.also {
+            it.preferredSize = java.awt.Dimension(750, 450)
+        }
     }
 
     private fun createGroupListPanel(): JPanel {
@@ -479,7 +483,7 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         pane.removeAll()
 
         val list = JBList(listModel)
-        list.cellRenderer = ListCellRenderer<StockerQuote> { _, symbol, _, _, _ ->
+        list.cellRenderer = ListCellRenderer<StockerQuote> { jList, symbol, _, isSelected, _ ->
             val originalName = if (setting.displayNameWithPinyin) {
                 StockerPinyinUtil.toPinyin(symbol.name)
             } else {
@@ -490,7 +494,7 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
             val costPrice = setting.getCostPrice(symbol.code)
             val holdings = setting.getHoldings(symbol.code)
 
-            panel {
+            val panel = panel {
                 row {
                     label(symbol.code)
                         .applyToComponent {
@@ -521,6 +525,15 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
                         }
                 }
             }.withBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8))
+
+            if (isSelected) {
+                panel.background = jList.selectionBackground
+                panel.foreground = jList.selectionForeground
+                panel.components.filterIsInstance<javax.swing.JLabel>().forEach {
+                    it.foreground = jList.selectionForeground
+                }
+            }
+            panel
         }
 
         val headerPanel = panel {
@@ -576,21 +589,21 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
 
                     val editPanel = panel {
                         row {
-                            label("Custom name:").widthGroup("editLabels")
+                            label(StockerBundle.msg("edit.stock.custom.name")).widthGroup("editLabels")
                             cell(nameField)
                         }.layout(RowLayout.LABEL_ALIGNED)
                         row {
-                            label("Cost price:").widthGroup("editLabels")
+                            label(StockerBundle.msg("edit.stock.cost.price")).widthGroup("editLabels")
                             cell(costPriceField)
                         }.layout(RowLayout.LABEL_ALIGNED)
                         row {
-                            label("Holdings:").widthGroup("editLabels")
+                            label(StockerBundle.msg("edit.stock.holdings")).widthGroup("editLabels")
                             cell(holdingsField)
                         }.layout(RowLayout.LABEL_ALIGNED)
                     }
 
                     val result = JOptionPane.showConfirmDialog(
-                        pane, editPanel, "Edit ${selectedQuote.code}",
+                        pane, editPanel, StockerBundle.msg("edit.stock.dialog.title", selectedQuote.code),
                         JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
                     )
 

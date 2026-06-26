@@ -6,7 +6,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.vermouthx.stocker.StockerBundle
 import com.vermouthx.stocker.views.dialogs.StockerManagementDialog
 
-class StockerStockManageAction : AnAction() {
+class StockerStockManageAction : AnAction(
+    StockerBundle.msg("action.manage.favorite.stocks"),
+    StockerBundle.msg("action.manage.favorite.stocks.description"),
+    null
+) {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val presentation = e.presentation

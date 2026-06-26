@@ -6,7 +6,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.vermouthx.stocker.StockerBundle
 
-class StockerSettingAction : AnAction() {
+class StockerSettingAction : AnAction(
+    StockerBundle.msg("action.settings"),
+    StockerBundle.msg("action.settings.description"),
+    null
+) {
 
     override fun update(e: AnActionEvent) {
         val project = e.project
