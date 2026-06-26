@@ -17,6 +17,7 @@ import com.vermouthx.stocker.StockerAppManager
 import com.vermouthx.stocker.StockerBundle
 import com.vermouthx.stocker.entities.StockerQuote
 import com.vermouthx.stocker.enums.StockerMarketType
+import com.vermouthx.stocker.enums.StockerTableColumn
 import com.vermouthx.stocker.settings.StockerSetting
 import com.vermouthx.stocker.utils.StockerPinyinUtil
 import com.vermouthx.stocker.utils.StockerQuoteHttpUtil
@@ -57,18 +58,15 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
 
         // Right panel: market tabs
         val tabbedPane = JBTabbedPane()
-        tabbedPane.add("CN", createTabContent(StockerMarketType.AShare))
-        tabbedPane.add("HK", createTabContent(StockerMarketType.HKStocks))
-        tabbedPane.add("US", createTabContent(StockerMarketType.USStocks))
-        tabbedPane.add("Crypto", createTabContent(StockerMarketType.Crypto))
+        val enabledMarkets = StockerMarketType.entries.filter { setting.isMarketEnabled(it) }
+        for (market in enabledMarkets) {
+            tabbedPane.addTab(market.title, createTabContent(market))
+        }
 
         tabbedPane.addChangeListener {
-            currentMarketSelection = when (tabbedPane.selectedIndex) {
-                0 -> StockerMarketType.AShare
-                1 -> StockerMarketType.HKStocks
-                2 -> StockerMarketType.USStocks
-                3 -> StockerMarketType.Crypto
-                else -> return@addChangeListener
+            val idx = tabbedPane.selectedIndex
+            if (idx in enabledMarkets.indices) {
+                currentMarketSelection = enabledMarkets[idx]
             }
         }
 
@@ -527,15 +525,15 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
 
         val headerPanel = panel {
             row {
-                label("Code").bold()
+                label(StockerTableColumn.SYMBOL.title).bold()
                     .applyToComponent { minimumSize = Dimension(80, 0); preferredSize = Dimension(80, preferredSize.height) }
-                label("Original Name").bold()
+                label(StockerTableColumn.NAME.title).bold()
                     .applyToComponent { minimumSize = Dimension(150, 0); preferredSize = Dimension(150, preferredSize.height) }
-                label("Custom Name").bold()
+                label(StockerBundle.msg("column.custom.name")).bold()
                     .applyToComponent { minimumSize = Dimension(120, 0); preferredSize = Dimension(120, preferredSize.height) }
-                label("Cost").bold()
+                label(StockerTableColumn.COST_PRICE.title).bold()
                     .applyToComponent { minimumSize = Dimension(80, 0); preferredSize = Dimension(80, preferredSize.height) }
-                label("Holdings").bold()
+                label(StockerTableColumn.HOLDINGS.title).bold()
                     .applyToComponent { minimumSize = Dimension(80, 0); preferredSize = Dimension(80, preferredSize.height) }
             }
         }.withBorder(BorderFactory.createCompoundBorder(
