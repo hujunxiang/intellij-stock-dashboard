@@ -75,7 +75,7 @@ class StockerStartupActivity : ProjectActivity, DumbAware {
                 val updateJson = updateConn.getInputStream().bufferedReader().readText()
 
                 val latestVersion = parseVersionFromResponse(updateJson)
-                if (latestVersion != null && latestVersion != installedVersion) {
+                if (latestVersion != null && isNewerVersion(latestVersion, installedVersion)) {
                     log.info("StockerStartup: update available $installedVersion -> $latestVersion")
                     ApplicationManager.getApplication().invokeLater {
                         StockerNotification.notifyUpdate(project, installedVersion, latestVersion)
@@ -101,6 +101,19 @@ class StockerStartupActivity : ProjectActivity, DumbAware {
         } catch (_: Exception) {
             null
         }
+    }
+
+    private fun isNewerVersion(latest: String, installed: String): Boolean {
+        val latestParts = latest.removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
+        val installedParts = installed.removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
+        val maxLen = maxOf(latestParts.size, installedParts.size)
+        for (i in 0 until maxLen) {
+            val l = latestParts.getOrElse(i) { 0 }
+            val r = installedParts.getOrElse(i) { 0 }
+            if (l > r) return true
+            if (l < r) return false
+        }
+        return false
     }
 
     private fun parseVersionFromResponse(json: String): String? {

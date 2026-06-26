@@ -120,10 +120,15 @@ class StockerToolWindow : ToolWindowFactory {
         val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 4))
         val buttons = mutableListOf<javax.swing.JButton>()
 
-        val selectedBg = java.awt.Color(70, 130, 220)
+        val selectedBg = javax.swing.UIManager.getColor("Component.accentColor")
+                ?: java.awt.Color(70, 130, 220)
         val defaultBg = javax.swing.UIManager.getColor("Button.background")
                 ?: javax.swing.UIManager.getColor("Panel.background")
                 ?: java.awt.Color(200, 200, 200)
+        val selectedFg = javax.swing.UIManager.getColor("Button.foreground")
+                ?: java.awt.Color.BLACK
+        val defaultFg = javax.swing.UIManager.getColor("Button.foreground")
+                ?: java.awt.Color.BLACK
 
         fun updateButtonSelection() {
             val selectedGroup = setting.lastSelectedGroup
@@ -132,7 +137,7 @@ class StockerToolWindow : ToolWindowFactory {
                 val isActive = (name == null && selectedGroup.isEmpty()) ||
                         (name == selectedGroup)
                 btn.background = if (isActive) selectedBg else defaultBg
-                btn.foreground = if (isActive) java.awt.Color.WHITE else javax.swing.UIManager.getColor("Button.foreground")
+                btn.foreground = if (isActive) selectedFg else defaultFg
             }
         }
 
@@ -152,7 +157,7 @@ class StockerToolWindow : ToolWindowFactory {
                         val isActive = (name == null && selectedGroup.isEmpty()) ||
                                 (name == selectedGroup)
                         background = if (isActive) selectedBg else defaultBg
-                        foreground = if (isActive) java.awt.Color.WHITE else javax.swing.UIManager.getColor("Button.foreground")
+                        foreground = if (isActive) selectedFg else defaultFg
                         super.paintComponent(g)
                     }
                 }
