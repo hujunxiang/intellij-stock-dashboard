@@ -1300,30 +1300,37 @@ public class StockerTableView implements Disposable {
     private void openF10Url(String stockCode) {
         if (stockCode == null || stockCode.isEmpty()) return;
 
-        // Build F10 URL for A-share stocks
-        // A-share codes: SH600410, SZ300308, SH688256, BJxxxxx, etc.
-        // URL pattern: https://webf10.gw.com.cn/{market}/B1/{market}{code}_B1.html
         String market = null;
         String code = null;
         if (stockCode.startsWith("SH")) {
-            market = "SH";
+            market = "sh";
             code = stockCode.substring(2);
         } else if (stockCode.startsWith("SZ")) {
-            market = "SZ";
+            market = "sz";
             code = stockCode.substring(2);
         } else if (stockCode.startsWith("BJ")) {
-            market = "BJ";
+            market = "bj";
             code = stockCode.substring(2);
         }
 
-        if (market == null || code == null || code.isEmpty()) return; // Not an A-share, skip
+        if (market == null || code == null || code.isEmpty()) return;
 
-        String url = "https://webf10.gw.com.cn/" + market + "/B1/" + market + code + "_B1.html";
+        String url;
+        if (isEtfCode(code)) {
+            url = "https://quote.eastmoney.com/" + market + code + ".html";
+        } else {
+            url = "https://webf10.gw.com.cn/" + market.toUpperCase() + "/B1/" + market.toUpperCase() + code + "_B1.html";
+        }
 
         try {
             BrowserUtil.browse(url);
         } catch (Exception ignored) {
         }
+    }
+
+    private boolean isEtfCode(String code) {
+        return code.startsWith("51") || code.startsWith("58") ||
+               code.startsWith("15") || code.startsWith("16");
     }
 
 }
