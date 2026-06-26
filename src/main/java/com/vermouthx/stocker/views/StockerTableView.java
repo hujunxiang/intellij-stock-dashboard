@@ -16,8 +16,10 @@ import com.vermouthx.stocker.enums.StockerSortState;
 import com.vermouthx.stocker.enums.StockerTableColumn;
 import com.vermouthx.stocker.settings.StockerSetting;
 import com.vermouthx.stocker.StockerBundle;
+import com.vermouthx.stocker.views.dialogs.StockerEditStockDialog;
 import com.vermouthx.stocker.utils.StockerActionUtil;
 import com.vermouthx.stocker.utils.StockerPinyinUtil;
+import com.vermouthx.stocker.utils.StockerTableModelUtil;
 import com.intellij.ide.BrowserUtil;
 
 import javax.swing.*;
@@ -439,6 +441,9 @@ public class StockerTableView implements Disposable {
         JMenu moveToGroupMenu = new JMenu(StockerBundle.msg("popup.move.to.group"));
         this.moveToGroupMenu = moveToGroupMenu;
 
+        JMenuItem editMenuItem = createStyledMenuItem(StockerBundle.msg("popup.edit"));
+        editMenuItem.addActionListener(e -> openEditDialog());
+
         JMenuItem deleteMenuItem = createStyledMenuItem(StockerBundle.msg("popup.delete"));
         deleteMenuItem.addActionListener(e -> deleteSelectedStock());
 
@@ -451,6 +456,7 @@ public class StockerTableView implements Disposable {
         popupMenu.add(new JSeparator());
         popupMenu.add(moveToGroupMenu);
         popupMenu.add(new JSeparator());
+        popupMenu.add(editMenuItem);
         popupMenu.add(deleteMenuItem);
 
         popupMenu.addPopupMenuListener(new PopupMenuListener() {
@@ -609,6 +615,42 @@ public class StockerTableView implements Disposable {
                 }
             });
             moveToGroupMenu.add(groupItem);
+        }
+    }
+
+    private void openEditDialog() {
+        String code = popupTargetCode;
+        String name = popupTargetName;
+        if (code == null || name == null) return;
+
+        StockerSetting setting = StockerSetting.Companion.getInstance();
+        String displayName = setting.getDisplayName(code, name);
+        var dialog = new StockerEditStockDialog(null, code, displayName);
+        if (dialog.showAndGet()) {
+            // Refresh the table row to reflect updated cost/holdings
+            SwingUtilities.invokeLater(() -> {
+                synchronized (tbModel) {
+                    int row = StockerTableModelUtil.existAt(tbModel, code);
+                    if (row >= 0) {
+                        Double costPrice = setting.getCostPrice(code);
+                        Integer holdings = setting.getHoldings(code);
+                        tbModel.setValueAt(formatCostPrice(costPrice), row, 9);
+                        tbModel.setValueAt(formatHoldings(holdings), row, 10);
+                        // Recalculate net profit and daily profit
+                        try {
+                            double current = ((Number) tbModel.getValueAt(row, 2)).doubleValue();
+                            double change = ((Number) tbModel.getValueAt(row, 7)).doubleValue();
+                            if (costPrice != null && holdings != null) {
+                                tbModel.setValueAt(String.format("%.3f", (current - costPrice) * holdings), row, 11);
+                            }
+                            if (holdings != null) {
+                                tbModel.setValueAt(String.format("%.3f", change * holdings), row, 12);
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            });
         }
     }
 
