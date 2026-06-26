@@ -46,7 +46,6 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         title = StockerBundle.msg("action.manage.favorite.stocks")
         isModal = true
         init()
-        pack()
     }
 
     override fun createCenterPanel(): DialogPanel {
@@ -82,9 +81,8 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         return panel {
             row {
                 cell(splitPane).align(AlignX.FILL).align(AlignY.FILL)
+                    .applyToComponent { preferredSize = java.awt.Dimension(750, 450) }
             }
-        }.also {
-            it.preferredSize = java.awt.Dimension(750, 450)
         }
     }
 
