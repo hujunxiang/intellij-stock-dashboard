@@ -11,6 +11,7 @@ import com.intellij.util.messages.MessageBusConnection
 import com.vermouthx.stocker.StockerApp
 import com.vermouthx.stocker.StockerAppManager
 import com.vermouthx.stocker.StockerBundle
+import com.vermouthx.stocker.entities.StockerSuggestion
 import com.vermouthx.stocker.enums.StockerMarketType
 import com.vermouthx.stocker.listeners.StockerQuoteDeleteListener
 import com.vermouthx.stocker.listeners.StockerQuoteDeleteNotifier.*
@@ -35,6 +36,30 @@ class StockerToolWindow : ToolWindowFactory {
         fun rebuildTabs() {
             instance?.rebuildTabs0()
         }
+
+        /**
+         * Collect the stocks currently selected across all live table views, so
+         * the export action can offer "export selected". Returns suggestions
+         * (code + market). Code column is index 0.
+         */
+        fun collectSelectedStocks(project: Project): List<StockerSuggestion> {
+            val inst = instance ?: return emptyList()
+            val setting = StockerSetting.instance
+            val seen = LinkedHashSet<String>()
+            val out = mutableListOf<StockerSuggestion>()
+            fun harvest(table: com.vermouthx.stocker.views.StockerTableView) {
+                val body = table.getTableBody()
+                for (row in body.selectedRows) {
+                    val code = body.getValueAt(body.convertRowIndexToModel(row), 0)?.toString() ?: continue
+                    if (!seen.add(code)) continue
+                    val market = setting.marketOf(code) ?: StockerMarketType.AShare
+                    out.add(StockerSuggestion(code, code, market))
+                }
+            }
+            inst.allView.tableView.let { harvest(it) }
+            inst.tabViewMap.values.forEach { harvest(it.tableView) }
+            return out
+        }
     }
 
     private val messageBus = ApplicationManager.getApplication().messageBus
@@ -46,6 +71,7 @@ class StockerToolWindow : ToolWindowFactory {
     private lateinit var allUpdateListeners: List<StockerQuoteUpdateListener>
     private lateinit var groupPanel: JPanel
     private lateinit var tabbedPane: JBTabbedPane
+    private var projectInstance: Project? = null
 
     override fun init(toolWindow: ToolWindow) {
         super.init(toolWindow)
@@ -60,6 +86,8 @@ class StockerToolWindow : ToolWindowFactory {
 
         val disposable = Disposer.newDisposable("StockerToolWindow")
         toolWindow.disposable.let { Disposer.register(it, disposable) }
+
+        projectInstance = project
 
         // Create tabbed pane (will be populated by rebuildTabs)
         tabbedPane = JBTabbedPane()
@@ -110,6 +138,9 @@ class StockerToolWindow : ToolWindowFactory {
         tabViewMap.forEach { (market, view) ->
             tabbedPane.addTab(market.title, view.component)
         }
+
+        allView.setProject(projectInstance)
+        tabViewMap.values.forEach { it.setProject(projectInstance) }
 
         // Re-subscribe to message bus
         subscribeMessage()

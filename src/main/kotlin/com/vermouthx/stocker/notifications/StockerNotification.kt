@@ -49,22 +49,25 @@ object StockerNotification {
                 <ul style="margin: 0; padding-left: 18px;">
                     <li style="${Styles.LIST_ITEM}">✨ <strong>新功能</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>右键菜单新增编辑股票功能：编辑成本价和持仓</li>
-                            <li>插件更新改为 IDE 内直接安装，不再跳转浏览器</li>
-                            <li>启动时自动检测新版本并提示更新</li>
+                            <li>新增导出自选功能：支持导出全部、指定分组或勾选的股票</li>
+                            <li>新增导入自选功能：支持合并或替换现有数据</li>
+                            <li>分组管理界面新增分组排序：上移/下移/置顶/置底</li>
+                            <li>分组管理界面新增重命名分组按钮</li>
+                            <li>主界面指数下拉框下方新增当前时间显示</li>
                         </ul>
                     </li>
                     <li style="${Styles.LIST_ITEM}">🐛 <strong>修复</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>修复工具窗口按钮悬浮提示不显示的问题</li>
-                            <li>修复白色主题下分组按钮文字不可见的问题</li>
-                            <li>修复分组管理界面列表选中无高亮的问题</li>
-                            <li>修复分组管理编辑界面文字不跟随语言设置的问题</li>
+                            <li>修复导出股票选择器：默认不勾选，展示代码/名称/分组列</li>
+                            <li>修复导出分组选择器使用复选框列表</li>
+                            <li>修复导出使用目录选择器并自动生成文件名</li>
+                            <li>修复导入时分组名称相同时合并去重</li>
+                            <li>修复分组管理工具栏按钮点击后焦点跳转问题</li>
                         </ul>
                     </li>
                 </ul>
                 <div style="${Styles.INFO_BOX}">
-                    <p style="margin: 0; font-size: 12px;">💡 <strong>说明：</strong>右键点击表格中的股票即可使用编辑功能。插件更新将自动下载安装并重启 IDE。</p>
+                    <p style="margin: 0; font-size: 12px;">💡 <strong>说明：</strong>点击主界面工具栏的导入/导出按钮可备份或恢复自选数据。</p>
                 </div>
             </div>
         """.trimIndent() else """
@@ -74,22 +77,25 @@ object StockerNotification {
                 <ul style="margin: 0; padding-left: 18px;">
                     <li style="${Styles.LIST_ITEM}">✨ <strong>New Features</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>Right-click edit stock: modify cost price and holdings</li>
-                            <li>Plugin updates install directly in IDE without browser</li>
-                            <li>Automatic update notification on startup</li>
+                            <li>Export favorites to JSON: all, specific group(s), or checked stocks</li>
+                            <li>Import favorites from JSON: merge or replace</li>
+                            <li>Group reorder in management dialog: move up/down, pin to top/bottom</li>
+                            <li>Group rename button added in management dialog</li>
+                            <li>Current-time clock shown below index dropdown</li>
                         </ul>
                     </li>
                     <li style="${Styles.LIST_ITEM}">🐛 <strong>Bug Fixes</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>Fixed toolbar button tooltips not showing</li>
-                            <li>Fixed group button text invisible on light theme</li>
-                            <li>Fixed management dialog list selection highlight missing</li>
-                            <li>Fixed management dialog edit labels not following language</li>
+                            <li>Fixed export stock picker: unchecked by default, shows code/name/group columns</li>
+                            <li>Fixed export group picker to use checkbox list</li>
+                            <li>Fixed export to use directory chooser with auto-generated filename</li>
+                            <li>Fixed import to merge deduped stocks when group name matches</li>
+                            <li>Fixed management dialog toolbar button focus-stealing on click</li>
                         </ul>
                     </li>
                 </ul>
                 <div style="${Styles.INFO_BOX}">
-                    <p style="margin: 0; font-size: 12px;">💡 <strong>Tip:</strong> Right-click a stock to edit it. Plugin updates will download, install, and restart the IDE automatically.</p>
+                    <p style="margin: 0; font-size: 12px;">💡 <strong>Tip:</strong> Use the Import / Export buttons on the main toolbar to back up or restore your favorites.</p>
                 </div>
             </div>
         """.trimIndent()

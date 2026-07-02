@@ -1,6 +1,7 @@
 package com.vermouthx.stocker.views;
 
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
@@ -17,6 +18,7 @@ import com.vermouthx.stocker.enums.StockerTableColumn;
 import com.vermouthx.stocker.settings.StockerSetting;
 import com.vermouthx.stocker.StockerBundle;
 import com.vermouthx.stocker.views.dialogs.StockerEditStockDialog;
+import com.vermouthx.stocker.views.dialogs.StockerSuggestionDialog;
 import com.vermouthx.stocker.utils.StockerActionUtil;
 import com.vermouthx.stocker.utils.StockerPinyinUtil;
 import com.vermouthx.stocker.utils.StockerTableModelUtil;
@@ -42,6 +44,7 @@ public class StockerTableView implements Disposable {
 
     private static final List<StockerTableView> tableViews = Collections.synchronizedList(new ArrayList<>());
 
+    private Project project;
     private JPanel mPane;
     private JScrollPane tbPane;
     private Color upColor;
@@ -75,6 +78,10 @@ public class StockerTableView implements Disposable {
     private String popupTargetCode = null;
     private String popupTargetName = null;
     private volatile String lastActiveGroupFilter = null;
+
+    // Bottom-of-window clock (YYYY-MM-DD HH:mm:ss), ticking once per second
+    private final JBLabel lbClock = new JBLabel("", SwingConstants.CENTER);
+    private javax.swing.Timer clockTimer;
     private JMenuItem miPinToTop;
     private JMenuItem miPinToBottom;
     private JMenuItem miMoveUp;
@@ -101,6 +108,12 @@ public class StockerTableView implements Disposable {
         }
         disposed = true;
         tableViews.remove(this);
+
+        // Stop the clock timer so it does not outlive this view.
+        if (clockTimer != null && clockTimer.isRunning()) {
+            clockTimer.stop();
+            clockTimer = null;
+        }
 
         // Clear data structures to help with garbage collection
         indices = new ArrayList<>();
@@ -236,11 +249,16 @@ public class StockerTableView implements Disposable {
         tbPane.setBorder(BorderFactory.createEmptyBorder());
         tbPane.setViewportBorder(BorderFactory.createEmptyBorder());
 
-        JPanel iPane = new JPanel(new GridLayout(1, 4, 8, 0)); // Add horizontal gap between components
+        // iPane holds the index line on top and the current-time clock below it,
+        // each on its own row.
+        JPanel iPane = new JPanel(new BorderLayout());
         iPane.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(1, 0, 0, 0, JBColor.border()),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12) // Add padding to index panel
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
+
+        // Top row: index dropdown + value/extent/percent.
+        JPanel indexRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
 
         // Style the index components
         Font indexFont = lbIndexValue.getFont().deriveFont(Font.BOLD, lbIndexValue.getFont().getSize() + 1f);
@@ -248,14 +266,41 @@ public class StockerTableView implements Disposable {
         lbIndexExtent.setFont(indexFont);
         lbIndexPercent.setFont(indexFont);
 
-        iPane.add(cbIndex);
-        iPane.add(lbIndexValue);
-        iPane.add(lbIndexExtent);
-        iPane.add(lbIndexPercent);
+        indexRow.add(cbIndex);
+        indexRow.add(lbIndexValue);
+        indexRow.add(lbIndexExtent);
+        indexRow.add(lbIndexPercent);
         cbIndex.addItemListener(i -> updateIndex());
+
+        // Bottom row: local clock, refreshed every second.
+        Font clockFont = lbClock.getFont().deriveFont(Font.PLAIN, lbClock.getFont().getSize() + 0f);
+        lbClock.setFont(clockFont);
+        JPanel clockRow = new JPanel(new java.awt.FlowLayout(FlowLayout.CENTER, 0, 0));
+        clockRow.add(lbClock);
+        updateClock();
+        clockTimer = new javax.swing.Timer(1000, e -> updateClock());
+        clockTimer.setInitialDelay(0);
+        clockTimer.start();
+
+        JPanel rows = new JPanel();
+        rows.setLayout(new javax.swing.BoxLayout(rows, javax.swing.BoxLayout.Y_AXIS));
+        rows.add(indexRow);
+        rows.add(clockRow);
+
+        iPane.add(rows, BorderLayout.CENTER);
+
         mPane = new JPanel(new BorderLayout());
         mPane.add(tbPane, BorderLayout.CENTER);
         mPane.add(iPane, BorderLayout.SOUTH);
+    }
+
+    private void updateClock() {
+        if (lbClock == null) return;
+        String text = java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        if (!text.equals(lbClock.getText())) {
+            lbClock.setText(text);
+        }
     }
 
     private static final String codeColumn = StockerTableColumn.SYMBOL.name();
@@ -383,9 +428,42 @@ public class StockerTableView implements Disposable {
             popupTargetName = getStringValueAt(row, 1);
         }
 
-        if (event.isPopupTrigger() && row != -1) {
-            rowPopupMenu.show(tbBody, event.getX(), event.getY());
+        if (event.isPopupTrigger()) {
+            if (row != -1) {
+                rowPopupMenu.show(tbBody, event.getX(), event.getY());
+            } else {
+                // Right-click on blank area → quick-add-stock popup.
+                getEmptyAreaPopupMenu().show(tbBody, event.getX(), event.getY());
+            }
         }
+    }
+
+    private JPopupMenu emptyAreaPopupMenu;
+
+    private synchronized JPopupMenu getEmptyAreaPopupMenu() {
+        if (emptyAreaPopupMenu != null) return emptyAreaPopupMenu;
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem addItem = createStyledMenuItem(StockerBundle.msg("export.add"));
+        addItem.addActionListener(e -> showAddStockDialog());
+        menu.add(addItem);
+        emptyAreaPopupMenu = menu;
+        return emptyAreaPopupMenu;
+    }
+
+    private void showAddStockDialog() {
+        Project p = this.project;
+        if (p == null) return;
+        StockerSuggestionDialog dialog = new StockerSuggestionDialog(p);
+        dialog.show();
+    }
+
+    /** Project setter, propagated from the tool window so dialogs can be shown. */
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    public Project getProject() {
+        return project;
     }
 
     private JMenuItem createStyledMenuItem(String text) {

@@ -213,6 +213,36 @@ class StockerSetting : PersistentStateComponent<StockerSettingState> {
         return true
     }
 
+    fun moveGroupUp(name: String): Boolean {
+        val idx = stockGroupNames.indexOf(name)
+        if (idx <= 0) return false
+        Collections.swap(stockGroupNames, idx, idx - 1)
+        return true
+    }
+
+    fun moveGroupDown(name: String): Boolean {
+        val idx = stockGroupNames.indexOf(name)
+        if (idx < 0 || idx >= stockGroupNames.lastIndex) return false
+        Collections.swap(stockGroupNames, idx, idx + 1)
+        return true
+    }
+
+    fun pinGroupToTop(name: String): Boolean {
+        val idx = stockGroupNames.indexOf(name)
+        if (idx <= 0) return false
+        stockGroupNames.removeAt(idx)
+        stockGroupNames.add(0, name)
+        return true
+    }
+
+    fun pinGroupToBottom(name: String): Boolean {
+        val idx = stockGroupNames.indexOf(name)
+        if (idx < 0 || idx >= stockGroupNames.lastIndex) return false
+        stockGroupNames.removeAt(idx)
+        stockGroupNames.add(name)
+        return true
+    }
+
     fun getGroupStocks(groupName: String): List<String> {
         return stockGroupMap[groupName] ?: emptyList()
     }

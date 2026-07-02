@@ -146,10 +146,20 @@ val latestIdeaReleaseVersion = providers.of(ProductReleasesValueSource::class) {
 // Uses the unified IntelliJ IDEA distribution (IntellijIdea), since the separate
 // Community (IC) artifact is no longer published as of 2025.3 / build 253.
 intellijPlatformTesting {
-    runIde {
+    this.runIde {
         register("runIdeLatest") {
             type = IntelliJPlatformType.IntellijIdea
             version = latestIdeaReleaseVersion
         }
     }
+}
+
+// IntelliJ 2025.3 (build 252+) ships an OpenTelemetry agent that can
+// double-register inside the sandbox and crash IDE bootstrap with
+// "Failed requirement" at TelemetryManager.setTelemetryManager:55.
+// Disabling it keeps runIde usable; it has no effect on the published
+// plugin. Apply to ALL runIde tasks (default `run` + `runIdeLatest`).
+tasks.withType(org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask::class.java).configureEach {
+    systemProperty("otel.javaagent.enabled", "false")
+    systemProperty("otel.sdk.disabled", "true")
 }

@@ -98,3 +98,6 @@ Install: `Settings` → `Plugins` → `⚙` → `Install Plugin from Disk` → s
 ## 💖 Donation
 
 If you like this plugin, you can star it on GitHub. Thank you!
+
+## GitHub
+https://github.com/hujunxiang/intellij-stock-dashboard

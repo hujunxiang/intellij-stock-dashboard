@@ -63,6 +63,18 @@
                     description="%action.restart.description"
                     icon="AllIcons.Actions.ForceRefresh">
             </action>
+            <action class="com.vermouthx.stocker.actions.StockerImportAction"
+                    id="com.vermouthx.stocker.actions.StockerImportAction"
+                    text="%action.import.stocks"
+                    description="%action.import.stocks.description"
+                    icon="AllIcons.Actions.Download">
+            </action>
+            <action class="com.vermouthx.stocker.actions.StockerExportAction"
+                    id="com.vermouthx.stocker.actions.StockerExportAction"
+                    text="%action.export.stocks"
+                    description="%action.export.stocks.description"
+                    icon="AllIcons.Actions.Upload">
+            </action>
         </group>
     </actions>
 </idea-plugin>

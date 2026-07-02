@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.0.3
+
+### ✨ New Features / 新功能
+
+- Added import favorites from JSON: merge or replace / 新增导入自选功能：支持合并或替换现有数据
+- Added export favorites to JSON: all, specific group(s), or checked stock(s) / 新增导出自选功能：支持导出全部、指定分组或勾选的股票
+- Added group reorder in management dialog: move up/down, pin to top/bottom / 分组管理界面新增分组排序：上移/下移/置顶/置底
+- Added group rename button in management dialog / 分组管理界面新增重命名分组按钮
+- Added current-time clock below index dropdown in main tool window / 主界面指数下拉框下方新增当前时间显示 
+- Added stock by click blank place / 主界面的空白处点击鼠标右键，可快速添加股票信息
+- Added group sort / 支持分组排序
+
+### 🐛 Bug Fixes / 修复
+
+- Fixed export dialog stock picker: unchecked by default, shows code/name/group columns / 修复导出股票选择器：默认不勾选，展示代码/名称/分组列
+- Fixed export dialog group picker to use checkbox list / 修复导出分组选择器使用复选框列表
+- Fixed export to use directory chooser with auto-generated filename / 修复导出使用目录选择器并自动生成文件名
+- Fixed import to merge deduped stocks when group name matches / 修复导入时分组名称相同时合并去重
+- Fixed management dialog toolbar button focus-stealing on click / 修复分组管理工具栏按钮点击后焦点跳转问题
+
 ## 2.0.2
 
 ### ✨ New Features / 新功能

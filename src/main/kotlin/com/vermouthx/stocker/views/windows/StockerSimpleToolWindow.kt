@@ -6,6 +6,8 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.vermouthx.stocker.StockerBundle
+import com.vermouthx.stocker.actions.StockerExportAction
+import com.vermouthx.stocker.actions.StockerImportAction
 import com.vermouthx.stocker.actions.StockerRefreshAction
 import com.vermouthx.stocker.actions.StockerRestartAction
 import com.vermouthx.stocker.actions.StockerSettingAction
@@ -17,6 +19,10 @@ import com.vermouthx.stocker.views.StockerTableView
 class StockerSimpleToolWindow : SimpleToolWindowPanel(true) {
     var tableView: StockerTableView = StockerTableView()
 
+    fun setProject(project: com.intellij.openapi.project.Project?) {
+        tableView.project = project
+    }
+
     init {
         val actionManager = ActionManager.getInstance()
 
@@ -25,7 +31,9 @@ class StockerSimpleToolWindow : SimpleToolWindowPanel(true) {
             actionManager.getAction(StockerRefreshAction::class.qualifiedName!!)?.let { it to "action.refresh.description" },
             actionManager.getAction(StockerStopAction::class.qualifiedName!!)?.let { it to "action.stop.refresh.description" },
             actionManager.getAction(StockerRestartAction::class.qualifiedName!!)?.let { it to "action.restart.description" },
-            actionManager.getAction(StockerStockManageAction::class.qualifiedName!!)?.let { it to "action.manage.favorite.stocks.description" }
+            actionManager.getAction(StockerStockManageAction::class.qualifiedName!!)?.let { it to "action.manage.favorite.stocks.description" },
+            actionManager.getAction(StockerImportAction::class.qualifiedName!!)?.let { it to "action.import.stocks.description" },
+            actionManager.getAction(StockerExportAction::class.qualifiedName!!)?.let { it to "action.export.stocks.description" }
         )
 
         val actionGroup = DefaultActionGroup(leftEntries.map { it.first })

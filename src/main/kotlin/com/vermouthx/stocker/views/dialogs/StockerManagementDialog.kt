@@ -24,7 +24,6 @@ import com.vermouthx.stocker.utils.StockerQuoteHttpUtil
 import com.vermouthx.stocker.views.StockerTableView
 import java.awt.BorderLayout
 import java.awt.Dimension
-import com.intellij.openapi.actionSystem.AnActionEvent
 import java.awt.event.ActionEvent
 import java.util.concurrent.CompletableFuture
 import javax.swing.*
@@ -41,6 +40,17 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
     private var selectedGroup: String? = null
     private var groupListModel: DefaultListModel<String> = DefaultListModel()
     private var groupList: JBList<String>? = null
+    private var moveUpBtn: JButton? = null
+    private var moveDownBtn: JButton? = null
+    private var pinTopBtn: JButton? = null
+    private var pinBottomBtn: JButton? = null
+    private var renameBtn: JButton? = null
+
+    // Bumped on every reloadAllTabs(); in-flight async market loads capture the
+    // token at dispatch time and abandon their render when it has changed — this
+    // stops a newly-created (empty) group from being repainted with a previous
+    // group's quotes that resolve late.
+    private var loadToken = 0
 
     init {
         title = StockerBundle.msg("action.manage.favorite.stocks")
@@ -75,8 +85,12 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         tabbedPane.selectedIndex = 0
 
         val splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, tabbedPane)
-        splitPane.dividerLocation = 150
         splitPane.resizeWeight = 0.0
+        splitPane.dividerLocation = 200
+        // Allow the left panel to shrink below the toolbar buttons' natural
+        // minimum width — otherwise the split pane clamps the divider at the
+        // toolbar's preferred width and dividerLocation is ignored.
+        leftPanel.minimumSize = Dimension(0, 0)
 
         return panel {
             row {
@@ -99,6 +113,12 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         } else {
             list.selectedIndex = 0
         }
+        val movable = selectedGroup != null
+        moveUpBtn?.isEnabled = movable
+        moveDownBtn?.isEnabled = movable
+        pinTopBtn?.isEnabled = movable
+        pinBottomBtn?.isEnabled = movable
+        renameBtn?.isEnabled = movable
 
         list.addListSelectionListener(ListSelectionListener { e ->
             if (!e.valueIsAdjusting) {
@@ -106,6 +126,12 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
                 val names = getGroupDisplayNames()
                 selectedGroup = if (idx <= 0 || idx >= names.size) null else names[idx]
                 setting.lastSelectedGroup = selectedGroup ?: ""
+                val movable = selectedGroup != null
+                moveUpBtn?.isEnabled = movable
+                moveDownBtn?.isEnabled = movable
+                pinTopBtn?.isEnabled = movable
+                pinBottomBtn?.isEnabled = movable
+                renameBtn?.isEnabled = movable
                 reloadAllTabs()
             }
         })
@@ -177,6 +203,89 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
             }
         }
 
+        // Icon-only buttons matching the right-side ToolbarDecorator style.
+        moveUpBtn = JButton(com.intellij.icons.AllIcons.Actions.MoveUp).apply {
+            toolTipText = StockerBundle.msg("manage.group.move.up")
+            addActionListener {
+                val g = selectedGroup ?: return@addActionListener
+                if (setting.moveGroupUp(g)) {
+                    refreshGroupList()
+                    list.selectedIndex = getGroupDisplayNames().indexOf(g)
+                    list.requestFocusInWindow()
+                    reloadAllTabs()
+                }
+            }
+        }
+
+        moveDownBtn = JButton(com.intellij.icons.AllIcons.Actions.MoveDown).apply {
+            toolTipText = StockerBundle.msg("manage.group.move.down")
+            addActionListener {
+                val g = selectedGroup ?: return@addActionListener
+                if (setting.moveGroupDown(g)) {
+                    refreshGroupList()
+                    list.selectedIndex = getGroupDisplayNames().indexOf(g)
+                    list.requestFocusInWindow()
+                    reloadAllTabs()
+                }
+            }
+        }
+
+        pinTopBtn = JButton(com.intellij.icons.AllIcons.Actions.MoveToTopLeft).apply {
+            toolTipText = StockerBundle.msg("manage.group.pin.top")
+            addActionListener {
+                val g = selectedGroup ?: return@addActionListener
+                if (setting.pinGroupToTop(g)) {
+                    refreshGroupList()
+                    list.selectedIndex = getGroupDisplayNames().indexOf(g)
+                    list.requestFocusInWindow()
+                    reloadAllTabs()
+                }
+            }
+        }
+
+        pinBottomBtn = JButton(com.intellij.icons.AllIcons.Actions.MoveToBottomLeft).apply {
+            toolTipText = StockerBundle.msg("manage.group.pin.bottom")
+            addActionListener {
+                val g = selectedGroup ?: return@addActionListener
+                if (setting.pinGroupToBottom(g)) {
+                    refreshGroupList()
+                    list.selectedIndex = getGroupDisplayNames().indexOf(g)
+                    list.requestFocusInWindow()
+                    reloadAllTabs()
+                }
+            }
+        }
+
+        renameBtn = JButton(com.intellij.icons.AllIcons.Actions.EditSource).apply {
+            toolTipText = StockerBundle.msg("manage.group.rename")
+            addActionListener {
+                val idx = list.selectedIndex
+                if (idx > 0) renameGroup(list, idx)
+            }
+        }
+
+        // Compact icon buttons: no margin, no border, no focus, no focus-paint.
+        // focusable=false keeps focus on the list after a click — otherwise the
+        // focus traversal policy would park on the next button.
+        for (b in listOf(moveUpBtn, moveDownBtn, pinTopBtn, pinBottomBtn, renameBtn)) {
+            b?.margin = java.awt.Insets(2, 2, 2, 2)
+            b?.isBorderPainted = false
+            b?.isContentAreaFilled = false
+            b?.isFocusPainted = false
+            b?.isFocusable = false
+            b?.preferredSize = Dimension(28, 28)
+        }
+
+        // Toolbar above the group list (mirrors the right-side table toolbar)
+        val toolbar = JPanel(java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0))
+        toolbar.border = BorderFactory.createEmptyBorder(0, 0, 4, 0)
+        toolbar.add(moveUpBtn)
+        toolbar.add(moveDownBtn)
+        toolbar.add(pinTopBtn)
+        toolbar.add(pinBottomBtn)
+        toolbar.add(renameBtn)
+        toolbar.preferredSize = Dimension(toolbar.preferredSize.width, 32)
+
         val clearGroupBtn = JButton(StockerBundle.msg("manage.clear.group"))
         clearGroupBtn.alignmentX = java.awt.Component.LEFT_ALIGNMENT
         clearGroupBtn.addActionListener {
@@ -228,10 +337,15 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
         btnPanel.add(clearGroupBtn)
         btnPanel.add(clearAllBtn)
 
+        val leftInner = JPanel(BorderLayout(0, 4))
+        leftInner.add(toolbar, BorderLayout.NORTH)
+        leftInner.add(scrollPane, BorderLayout.CENTER)
+
         val panel = JPanel(BorderLayout(0, 4))
-        panel.add(scrollPane, BorderLayout.CENTER)
+        panel.add(leftInner, BorderLayout.CENTER)
         panel.add(btnPanel, BorderLayout.SOUTH)
-        panel.preferredSize = Dimension(160, 0)
+        panel.preferredSize = Dimension(200, 0)
+        panel.minimumSize = Dimension(0, 0)
         return panel
     }
 
@@ -322,10 +436,12 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
     }
 
     private fun reloadAllTabs() {
+        loadToken++
         loadAllMarketData()
     }
 
     private fun loadMarketData(marketType: StockerMarketType, codes: List<String>) {
+        val token = loadToken
         val listModel = DefaultListModel<StockerQuote>()
         currentSymbols[marketType] = listModel
 
@@ -346,6 +462,10 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
                 emptyList()
             }
         }.thenAccept { quotes ->
+            // Discard results belonging to a superseded reload — otherwise a
+            // stale future from a previously-selected group can repaint a
+            // freshly-loaded (e.g. newly-created empty) group's pane.
+            if (token != loadToken) return@thenAccept
             SwingUtilities.invokeLater {
                 listModel.addAll(quotes)
                 tabMap[marketType]?.let { pane ->
