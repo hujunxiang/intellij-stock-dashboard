@@ -46,7 +46,11 @@ public class StockerActionUtil {
                 return false;
             }
         }
-        return false;
+        // Stock already exists in watchlist: assign to group if specified (multi-group support)
+        if (groupName != null && !groupName.isEmpty()) {
+            setting.assignStockToGroup(code, groupName);
+        }
+        return true;
     }
 
     public static boolean removeStock(StockerMarketType market, StockerSuggestion suggest) {

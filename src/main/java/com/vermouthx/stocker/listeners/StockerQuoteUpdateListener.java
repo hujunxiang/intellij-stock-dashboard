@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     private final StockerTableView myTableView;
-    private volatile String groupFilter = null; // null = show all
+    private volatile String groupFilter = "";
     private volatile List<StockerQuote> storedQuotes = new CopyOnWriteArrayList<>();
     private final java.util.Map<String, Double> lastNotifiedPct = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, Double> lastFetchedPrice = new java.util.concurrent.ConcurrentHashMap<>();

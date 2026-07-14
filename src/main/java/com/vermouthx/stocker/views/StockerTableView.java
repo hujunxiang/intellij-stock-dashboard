@@ -87,6 +87,8 @@ public class StockerTableView implements Disposable {
     private JMenuItem miMoveUp;
     private JMenuItem miMoveDown;
     private JMenu moveToGroupMenu;
+    private JMenuItem editMenuItem;
+    private JMenuItem deleteMenuItem;
 
     private volatile boolean disposed = false;
 
@@ -520,9 +522,11 @@ public class StockerTableView implements Disposable {
         this.moveToGroupMenu = moveToGroupMenu;
 
         JMenuItem editMenuItem = createStyledMenuItem(StockerBundle.msg("popup.edit"));
+        this.editMenuItem = editMenuItem;
         editMenuItem.addActionListener(e -> openEditDialog());
 
         JMenuItem deleteMenuItem = createStyledMenuItem(StockerBundle.msg("popup.delete"));
+        this.deleteMenuItem = deleteMenuItem;
         deleteMenuItem.addActionListener(e -> deleteSelectedStock());
 
         popupMenu.add(f10MenuItem);
@@ -542,6 +546,10 @@ public class StockerTableView implements Disposable {
             public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
                 updateReorderMenuItems();
                 rebuildMoveToGroupMenu();
+                boolean inGroupView = lastActiveGroupFilter != null;
+                moveToGroupMenu.setVisible(inGroupView);
+                editMenuItem.setVisible(inGroupView);
+                deleteMenuItem.setVisible(inGroupView);
             }
 
             @Override
@@ -668,7 +676,7 @@ public class StockerTableView implements Disposable {
         if (currentGroup != null) {
             JMenuItem ungroupItem = createStyledMenuItem(StockerBundle.msg("popup.ungroup"));
             ungroupItem.addActionListener(e -> {
-                setting.removeStockFromGroup(code);
+                setting.removeStockFromGroup(code, currentGroup);
                 if (lastActiveGroupFilter != null && !lastActiveGroupFilter.isEmpty()) {
                     int row = tbBody.getSelectedRow();
                     if (row >= 0) tbModel.removeRow(row);
@@ -754,7 +762,21 @@ public class StockerTableView implements Disposable {
             clearPopupTarget();
             return;
         }
-        StockerActionUtil.removeStock(market, new StockerSuggestion(code, name == null ? code : name, market));
+        if (lastActiveGroupFilter != null && !lastActiveGroupFilter.isEmpty()) {
+            // Viewing a specific group: remove from this group only
+            setting.removeStockFromGroup(code, lastActiveGroupFilter);
+            if (!setting.isInAnyGroup(code)) {
+                setting.removeCode(market, code);
+            }
+            int row = tbBody.getSelectedRow();
+            if (row >= 0) {
+                tbModel.removeRow(row);
+                clearSortState();
+            }
+        } else {
+            // Viewing "All" or no filter: full removal from market list
+            StockerActionUtil.removeStock(market, new StockerSuggestion(code, name == null ? code : name, market));
+        }
         clearPopupTarget();
     }
 

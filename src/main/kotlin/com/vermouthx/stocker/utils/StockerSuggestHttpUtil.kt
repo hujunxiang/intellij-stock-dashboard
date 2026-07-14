@@ -183,7 +183,7 @@ object StockerSuggestHttpUtil {
             val rawName = columns[2]
             val name = StringEscapeUtils.unescapeJava(rawName)
             when (type) {
-                "sz", "sh" -> result.add(StockerSuggestion(type.uppercase() + code, name, StockerMarketType.AShare))
+                "sz", "sh", "bj" -> result.add(StockerSuggestion(type.uppercase() + code, name, StockerMarketType.AShare))
 
                 "hk" -> result.add(StockerSuggestion(code, name, StockerMarketType.HKStocks))
 

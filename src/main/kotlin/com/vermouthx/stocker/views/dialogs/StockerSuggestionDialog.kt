@@ -273,7 +273,12 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
             val (market, normalizedCode) = normalizeCode(raw)
             try {
                 if (setting.containsCode(normalizedCode)) {
-                    results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.already.exists")))
+                    if (groupName != null && setting.stockGroupNames.contains(groupName) && !setting.getGroupStocks(groupName).contains(normalizedCode)) {
+                        setting.assignStockToGroup(normalizedCode, groupName)
+                        results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.add.success")))
+                    } else {
+                        results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.already.exists")))
+                    }
                     continue
                 }
                 // Validate via HTTP
@@ -304,6 +309,17 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
         }
 
         return results
+    }
+
+    private fun updateButtonText(button: JButton, suggestion: StockerSuggestion) {
+        val currentGroupForBtn = selectedGroup ?: setting.lastSelectedGroup.takeIf { it.isNotEmpty() }
+        button.text = if (currentGroupForBtn != null && setting.getGroupStocks(currentGroupForBtn).contains(suggestion.code)) {
+            StockerStockOperation.STOCK_DELETE.operation
+        } else if (currentGroupForBtn == null && StockerSetting.instance.containsCode(suggestion.code)) {
+            StockerStockOperation.STOCK_DELETE.operation
+        } else {
+            StockerStockOperation.STOCK_ADD.operation
+        }
     }
 
     private fun refreshScrollPane(scrollPane: JBScrollPane) {
@@ -395,7 +411,10 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
                             minimumSize = java.awt.Dimension(300, 0)
                             preferredSize = java.awt.Dimension(300, preferredSize.height)
                         }
-                        if (StockerSetting.instance.containsCode(suggestion.code)) {
+                        val currentGroupForBtn = selectedGroup ?: setting.lastSelectedGroup.takeIf { it.isNotEmpty() }
+                        if (currentGroupForBtn != null && setting.getGroupStocks(currentGroupForBtn).contains(suggestion.code)) {
+                            actionButton.text = StockerStockOperation.STOCK_DELETE.operation
+                        } else if (currentGroupForBtn == null && StockerSetting.instance.containsCode(suggestion.code)) {
                             actionButton.text = StockerStockOperation.STOCK_DELETE.operation
                         } else {
                             actionButton.text = StockerStockOperation.STOCK_ADD.operation
@@ -408,12 +427,23 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
                                     StockerStockOperation.STOCK_ADD -> {
                                         val groupName = selectedGroup ?: setting.lastSelectedGroup.takeIf { it.isNotEmpty() }
                                         StockerActionUtil.addStock(suggestion.market, suggestion, project, groupName)
-                                        actionButton.text = StockerStockOperation.STOCK_DELETE.operation
+                                        updateButtonText(actionButton, suggestion)
                                     }
 
                                     StockerStockOperation.STOCK_DELETE -> {
-                                        StockerActionUtil.removeStock(suggestion.market, suggestion)
-                                        actionButton.text = StockerStockOperation.STOCK_ADD.operation
+                                        val currentGroupForBtn = selectedGroup ?: setting.lastSelectedGroup.takeIf { it.isNotEmpty() }
+                                        if (currentGroupForBtn != null) {
+                                            // Remove from specific group only
+                                            setting.removeStockFromGroup(suggestion.code, currentGroupForBtn)
+                                            if (!setting.isInAnyGroup(suggestion.code)) {
+                                                StockerActionUtil.removeStock(suggestion.market, suggestion)
+                                            }
+                                        } else {
+                                            // "All" view: remove from all groups first, then market list
+                                            setting.removeStockFromGroup(suggestion.code)
+                                            StockerActionUtil.removeStock(suggestion.market, suggestion)
+                                        }
+                                        updateButtonText(actionButton, suggestion)
                                     }
 
                                     else -> {

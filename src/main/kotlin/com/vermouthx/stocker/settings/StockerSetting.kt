@@ -186,10 +186,13 @@ class StockerSetting : PersistentStateComponent<StockerSettingState> {
 
     fun removeGroup(name: String) {
         val codes = stockGroupMap[name] ?: emptyList()
+        val remaining = stockGroupMap.filterKeys { it != name }.values.flatten().toSet()
         for (code in codes.toList()) {
-            val market = marketOf(code)
-            if (market != null) {
-                removeCode(market, code)
+            if (code !in remaining) {
+                val market = marketOf(code)
+                if (market != null) {
+                    removeCode(market, code)
+                }
             }
         }
         stockGroupNames.remove(name)
@@ -255,8 +258,6 @@ class StockerSetting : PersistentStateComponent<StockerSettingState> {
     }
 
     fun assignStockToGroup(code: String, groupName: String) {
-        // Remove from previous group first
-        removeStockFromGroup(code)
         val codes = stockGroupMap[groupName]
         if (codes != null) {
             if (!codes.contains(code)) codes.add(code)
@@ -264,6 +265,18 @@ class StockerSetting : PersistentStateComponent<StockerSettingState> {
             stockGroupMap[groupName] = mutableListOf(code)
             if (!stockGroupNames.contains(groupName)) stockGroupNames.add(groupName)
         }
+    }
+
+    fun removeStockFromGroup(code: String, groupName: String) {
+        stockGroupMap[groupName]?.remove(code)
+    }
+
+    fun getStockGroups(code: String): List<String> {
+        return stockGroupMap.filter { (_, codes) -> codes.contains(code) }.keys.toList()
+    }
+
+    fun isInAnyGroup(code: String): Boolean {
+        return stockGroupMap.values.any { it.contains(code) }
     }
 
     fun removeStockFromGroup(code: String) {
@@ -275,7 +288,9 @@ class StockerSetting : PersistentStateComponent<StockerSettingState> {
     fun clearGroup(groupName: String) {
         val codes = stockGroupMap[groupName] ?: return
         for (code in codes.toList()) {
-            removeCodeByCode(code)
+            if (!isInAnyGroup(code)) {
+                removeCodeByCode(code)
+            }
         }
         stockGroupMap.remove(groupName)
         stockGroupNames.remove(groupName)

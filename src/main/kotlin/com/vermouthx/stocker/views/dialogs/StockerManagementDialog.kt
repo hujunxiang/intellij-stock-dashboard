@@ -297,13 +297,6 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
                 Messages.getWarningIcon()
             )
             if (result == Messages.YES) {
-                val codes = setting.getGroupStocks(selectedGroup!!)
-                for (code in codes.toList()) {
-                    val market = setting.marketOf(code)
-                    if (market != null) {
-                        setting.removeCode(market, code)
-                    }
-                }
                 setting.removeGroup(selectedGroup!!)
                 selectedGroup = null
                 setting.lastSelectedGroup = ""
@@ -683,12 +676,23 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
                 if (selectedIndex >= 0) {
                     val selectedQuote = listModel.getElementAt(selectedIndex)
                     val code = selectedQuote.code
-                    // Remove from group
-                    setting.removeStockFromGroup(code)
-                    // Remove from market list
-                    val market = setting.marketOf(code)
-                    if (market != null) {
-                        setting.removeCode(market, code)
+                    if (selectedGroup != null) {
+                        // Viewing a specific group: remove from this group only
+                        setting.removeStockFromGroup(code, selectedGroup!!)
+                        // Only remove from market list if not in any other group
+                        if (!setting.isInAnyGroup(code)) {
+                            val market = setting.marketOf(code)
+                            if (market != null) {
+                                setting.removeCode(market, code)
+                            }
+                        }
+                    } else {
+                        // Viewing "全部": remove from all groups and market list
+                        setting.removeStockFromGroup(code)
+                        val market = setting.marketOf(code)
+                        if (market != null) {
+                            setting.removeCode(market, code)
+                        }
                     }
                     reloadAllTabs()
                 }
