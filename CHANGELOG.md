@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.0.4
+
+### ✨ New Features / 新功能
+- Added support for adding stocks from the Beijing exchanges / 支持添加北交所股票
+- Added support for adding the same stock to different groups / 支持不同分组添加相同股票
+- Added support for disabling group-scoped actions in "All" view / 支持在“全部”分组视图下禁用分组相关操作，比如删除、移动到分组、编辑
+
+### 🐛 Bug Fixes / 修复
+
+- Fixed cross-group deletion when using Ungroup / Delete on stocks belonging to multiple groups / 修复取消分组、删除操作导致跨分组删除的问题
+- Fixed "already exists" in batch import preventing re-adding to current group / 修复批量导入时因股票存在于其他分组而无法添加到当前分组的问题
+- Fixed initial table view showing ungrouped stocks / 修复插件启动时未分组股票也被显示的问题
+- Fixed right-click menu showing group-scoped actions in "All" view / 修复"全部"视图下右键菜单错误显示分组相关操作的问题
+- Fixed delete from suggestion dialog "All" view leaving stale group references / 修复建议对话框"全部"视图删除后分组引用残留的问题
+
 ## 2.0.3
 
 ### ✨ New Features / 新功能

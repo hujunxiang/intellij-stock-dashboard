@@ -45,58 +45,34 @@ object StockerNotification {
         return if (isChinese()) """
             <div style="${Styles.CONTAINER}">
                 <p style="${Styles.PARAGRAPH}">🎉 <strong>欢迎使用 StockerPlus v${v}！本次更新内容：</strong></p>
-                <h4 style="${Styles.HEADING}">✨ v${v} 新功能</h4>
+                <h4 style="${Styles.HEADING}">🐛 v${v} 修复</h4>
                 <ul style="margin: 0; padding-left: 18px;">
-                    <li style="${Styles.LIST_ITEM}">✨ <strong>新功能</strong>
-                        <ul style="${Styles.SUB_LIST}">
-                            <li>新增导出自选功能：支持导出全部、指定分组或勾选的股票</li>
-                            <li>新增导入自选功能：支持合并或替换现有数据</li>
-                            <li>分组管理界面新增分组排序：上移/下移/置顶/置底</li>
-                            <li>分组管理界面新增重命名分组按钮</li>
-                            <li>主界面指数下拉框下方新增当前时间显示</li>
-                        </ul>
-                    </li>
                     <li style="${Styles.LIST_ITEM}">🐛 <strong>修复</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>修复导出股票选择器：默认不勾选，展示代码/名称/分组列</li>
-                            <li>修复导出分组选择器使用复选框列表</li>
-                            <li>修复导出使用目录选择器并自动生成文件名</li>
-                            <li>修复导入时分组名称相同时合并去重</li>
-                            <li>修复分组管理工具栏按钮点击后焦点跳转问题</li>
+                            <li>修复取消分组、删除操作导致跨分组删除的问题</li>
+                            <li>修复批量导入时因股票存在于其他分组而无法添加到当前分组的问题</li>
+                            <li>修复插件启动时未分组股票也被显示的问题</li>
+                            <li>修复"全部"视图下右键菜单错误显示分组相关操作的问题</li>
+                            <li>修复建议对话框"全部"视图删除后分组引用残留的问题</li>
                         </ul>
                     </li>
                 </ul>
-                <div style="${Styles.INFO_BOX}">
-                    <p style="margin: 0; font-size: 12px;">💡 <strong>说明：</strong>点击主界面工具栏的导入/导出按钮可备份或恢复自选数据。</p>
-                </div>
             </div>
         """.trimIndent() else """
             <div style="${Styles.CONTAINER}">
                 <p style="${Styles.PARAGRAPH}">🎉 <strong>Welcome to StockerPlus v${v}! Here's what's new:</strong></p>
-                <h4 style="${Styles.HEADING}">✨ New in v${v}</h4>
+                <h4 style="${Styles.HEADING}">🐛 Bug Fixes in v${v}</h4>
                 <ul style="margin: 0; padding-left: 18px;">
-                    <li style="${Styles.LIST_ITEM}">✨ <strong>New Features</strong>
-                        <ul style="${Styles.SUB_LIST}">
-                            <li>Export favorites to JSON: all, specific group(s), or checked stocks</li>
-                            <li>Import favorites from JSON: merge or replace</li>
-                            <li>Group reorder in management dialog: move up/down, pin to top/bottom</li>
-                            <li>Group rename button added in management dialog</li>
-                            <li>Current-time clock shown below index dropdown</li>
-                        </ul>
-                    </li>
                     <li style="${Styles.LIST_ITEM}">🐛 <strong>Bug Fixes</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>Fixed export stock picker: unchecked by default, shows code/name/group columns</li>
-                            <li>Fixed export group picker to use checkbox list</li>
-                            <li>Fixed export to use directory chooser with auto-generated filename</li>
-                            <li>Fixed import to merge deduped stocks when group name matches</li>
-                            <li>Fixed management dialog toolbar button focus-stealing on click</li>
+                            <li>Fixed cross-group deletion when using Ungroup / Delete on stocks in multiple groups</li>
+                            <li>Fixed batch import skipping stocks that exist in other groups</li>
+                            <li>Fixed initial table view showing ungrouped stocks</li>
+                            <li>Fixed right-click menu showing group-scoped actions in "All" view</li>
+                            <li>Fixed stale group references after deleting from "All" view in suggestion dialog</li>
                         </ul>
                     </li>
                 </ul>
-                <div style="${Styles.INFO_BOX}">
-                    <p style="margin: 0; font-size: 12px;">💡 <strong>Tip:</strong> Use the Import / Export buttons on the main toolbar to back up or restore your favorites.</p>
-                </div>
             </div>
         """.trimIndent()
     }
