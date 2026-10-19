@@ -2,10 +2,12 @@ package com.vermouthx.stocker.activities
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.vermouthx.stocker.StockerMeta
+import com.vermouthx.stocker.listeners.StockerEditorListener
 import com.vermouthx.stocker.notifications.StockerNotification
 import com.vermouthx.stocker.settings.StockerSetting
 
@@ -14,6 +16,7 @@ class StockerStartupActivity : ProjectActivity, DumbAware {
     private val log = Logger.getInstance(StockerStartupActivity::class.java)
 
     override suspend fun execute(project: Project) {
+        registerEditorListener()
         val settings = StockerSetting.instance
         val currentVersion = StockerMeta.currentVersion
         log.info("StockerStartup: version=${settings.version}, currentVersion=$currentVersion")
@@ -125,6 +128,45 @@ class StockerStartupActivity : ProjectActivity, DumbAware {
             if (start > 0 && end > start) json.substring(start, end) else null
         } catch (_: Exception) {
             null
+        }
+    }
+
+    private fun registerEditorListener() {
+        val listener = getOrCreateEditorListener()
+        // Editors restored from the previous session may already exist before
+        // the factory listener is registered, and editors can be created while
+        // the IDE is restoring a project. Attach the mouse listener to all
+        // current editors so double-click toggling works in every project window
+        // regardless of open order.
+        ApplicationManager.getApplication().invokeLater {
+            try {
+                for (editor in EditorFactory.getInstance().allEditors) {
+                    listener.attachToEditor(editor)
+                }
+            } catch (e: Exception) {
+                log.warn("StockerStartup: failed to attach editor listener to existing editors", e)
+            }
+        }
+    }
+
+    companion object {
+        @Volatile
+        private var editorListener: StockerEditorListener? = null
+
+        private fun getOrCreateEditorListener(): StockerEditorListener {
+            editorListener?.let { return it }
+            synchronized(this) {
+                var listener = editorListener
+                if (listener == null) {
+                    listener = StockerEditorListener()
+                    EditorFactory.getInstance().addEditorFactoryListener(
+                        listener,
+                        ApplicationManager.getApplication()
+                    )
+                    editorListener = listener
+                }
+                return listener
+            }
         }
     }
 }

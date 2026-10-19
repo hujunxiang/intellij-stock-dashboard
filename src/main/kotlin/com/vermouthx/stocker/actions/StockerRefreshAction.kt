@@ -3,6 +3,7 @@ package com.vermouthx.stocker.actions
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.diagnostic.Logger
 import com.vermouthx.stocker.StockerAppManager
 import com.vermouthx.stocker.StockerBundle
 
@@ -21,11 +22,22 @@ class StockerRefreshAction : AnAction(
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        StockerAppManager.myApplication(e.project)?.shutdownThenClear()
-        StockerAppManager.myApplication(e.project)?.schedule()
+        try {
+            val project = e.project ?: return
+            val app = StockerAppManager.myApplication(project)
+            app?.shutdownThenClear()
+            // Always reschedule, even if shutdownThenClear threw — otherwise the
+            // refresh loop dies permanently and the tool window is unresponsive.
+            StockerAppManager.myApplication(project)?.schedule()
+        } catch (ex: Exception) {
+            log.warn("StockerRefreshAction failed", ex)
+            try { StockerAppManager.myApplication(e.project)?.schedule() } catch (_: Exception) {}
+        }
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread {
         return ActionUpdateThread.BGT
     }
+
+    private val log = Logger.getInstance(javaClass)
 }

@@ -9,6 +9,7 @@ import com.vermouthx.stocker.settings.StockerSetting;
 import com.vermouthx.stocker.utils.StockerTableModelUtil;
 import com.vermouthx.stocker.views.StockerTableView;
 
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,8 +34,10 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     public void refreshGroupFilter() {
         List<StockerQuote> snapshot = storedQuotes;
         if (!snapshot.isEmpty()) {
-            myTableView.clearTable();
-            applyGroupFilter(snapshot);
+            SwingUtilities.invokeLater(() -> {
+                myTableView.clearTable();
+                applyGroupFilter(snapshot);
+            });
         }
         // If storedQuotes is empty, next syncQuotes() will populate with filtered data
     }
@@ -69,7 +72,9 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
     public void syncQuotes(List<StockerQuote> quotes, int size) {
         // Store all quotes atomically (replace, don't clear+add)
         storedQuotes = new CopyOnWriteArrayList<>(quotes);
-        applyGroupFilter(quotes);
+        // Table mutations must happen on the EDT; the listener is invoked from
+        // the scheduler's background thread.
+        SwingUtilities.invokeLater(() -> applyGroupFilter(quotes));
     }
 
     /**
@@ -160,57 +165,62 @@ public class StockerQuoteUpdateListener implements StockerQuoteUpdateNotifier {
                     String displayName = setting.getDisplayName(quote.getCode(), quote.getName());
                     int rowIndex = StockerTableModelUtil.existAt(tableModel, quote.getCode());
                     if (rowIndex != -1) {
-                        if (!tableModel.getValueAt(rowIndex, 1).equals(displayName)) {
+                        // Null-safe comparisons: getValueAt may return null when a
+                        // row is mid-update; calling .equals() on null throws NPE
+                        // which would propagate up and permanently kill the scheduled
+                        // refresh task (ScheduledExecutorService suppresses a task
+                        // forever after an uncaught exception).
+                        if (!java.util.Objects.equals(tableModel.getValueAt(rowIndex, 1), displayName)) {
                             tableModel.setValueAt(displayName, rowIndex, 1);
                             tableModel.fireTableCellUpdated(rowIndex, 1);
                         }
-                        if (!tableModel.getValueAt(rowIndex, 2).equals(quote.getCurrent())) {
+                        if (!java.util.Objects.equals(tableModel.getValueAt(rowIndex, 2), quote.getCurrent())) {
                             tableModel.setValueAt(quote.getCurrent(), rowIndex, 2);
                             tableModel.fireTableCellUpdated(rowIndex, 2);
                         }
-                        if (!tableModel.getValueAt(rowIndex, 3).equals(quote.getOpening())) {
+                        if (!java.util.Objects.equals(tableModel.getValueAt(rowIndex, 3), quote.getOpening())) {
                             tableModel.setValueAt(quote.getOpening(), rowIndex, 3);
                             tableModel.fireTableCellUpdated(rowIndex, 3);
                         }
-                        if (!tableModel.getValueAt(rowIndex, 4).equals(quote.getClose())) {
+                        if (!java.util.Objects.equals(tableModel.getValueAt(rowIndex, 4), quote.getClose())) {
                             tableModel.setValueAt(quote.getClose(), rowIndex, 4);
                             tableModel.fireTableCellUpdated(rowIndex, 4);
                         }
-                        if (!tableModel.getValueAt(rowIndex, 5).equals(quote.getLow())) {
+                        if (!java.util.Objects.equals(tableModel.getValueAt(rowIndex, 5), quote.getLow())) {
                             tableModel.setValueAt(quote.getLow(), rowIndex, 5);
                             tableModel.fireTableCellUpdated(rowIndex, 5);
                         }
-                        if (!tableModel.getValueAt(rowIndex, 6).equals(quote.getHigh())) {
+                        if (!java.util.Objects.equals(tableModel.getValueAt(rowIndex, 6), quote.getHigh())) {
                             tableModel.setValueAt(quote.getHigh(), rowIndex, 6);
                             tableModel.fireTableCellUpdated(rowIndex, 6);
                         }
-                        if (!tableModel.getValueAt(rowIndex, 7).equals(quote.getChange())) {
+                        if (!java.util.Objects.equals(tableModel.getValueAt(rowIndex, 7), quote.getChange())) {
                             tableModel.setValueAt(quote.getChange(), rowIndex, 7);
                             tableModel.fireTableCellUpdated(rowIndex, 7);
                         }
-                        if (!tableModel.getValueAt(rowIndex, 8).equals(quote.getPercentage())) {
+                        if (!java.util.Objects.equals(tableModel.getValueAt(rowIndex, 8), quote.getPercentage())) {
                             tableModel.setValueAt(quote.getPercentage() + "%", rowIndex, 8);
                             tableModel.fireTableCellUpdated(rowIndex, 8);
                         }
                         Double costPrice = setting.getCostPrice(quote.getCode());
                         String costPriceStr = formatCostPrice(costPrice);
-                        if (!costPriceStr.equals(tableModel.getValueAt(rowIndex, 9))) {
+                        if (!java.util.Objects.equals(costPriceStr, tableModel.getValueAt(rowIndex, 9))) {
                             tableModel.setValueAt(costPriceStr, rowIndex, 9);
                             tableModel.fireTableCellUpdated(rowIndex, 9);
                         }
                         Integer holdings = setting.getHoldings(quote.getCode());
                         Object holdingsVal = formatHoldings(holdings);
-                        if (!holdingsVal.equals(tableModel.getValueAt(rowIndex, 10))) {
+                        if (!java.util.Objects.equals(holdingsVal, tableModel.getValueAt(rowIndex, 10))) {
                             tableModel.setValueAt(holdingsVal, rowIndex, 10);
                             tableModel.fireTableCellUpdated(rowIndex, 10);
                         }
                         Object netProfitVal = formatNetProfit(quote, costPrice, holdings);
-                        if (!netProfitVal.equals(tableModel.getValueAt(rowIndex, 11))) {
+                        if (!java.util.Objects.equals(netProfitVal, tableModel.getValueAt(rowIndex, 11))) {
                             tableModel.setValueAt(netProfitVal, rowIndex, 11);
                             tableModel.fireTableCellUpdated(rowIndex, 11);
                         }
                         Object dailyProfitVal = formatDailyProfit(quote, holdings);
-                        if (!dailyProfitVal.equals(tableModel.getValueAt(rowIndex, 12))) {
+                        if (!java.util.Objects.equals(dailyProfitVal, tableModel.getValueAt(rowIndex, 12))) {
                             tableModel.setValueAt(dailyProfitVal, rowIndex, 12);
                             tableModel.fireTableCellUpdated(rowIndex, 12);
                         }

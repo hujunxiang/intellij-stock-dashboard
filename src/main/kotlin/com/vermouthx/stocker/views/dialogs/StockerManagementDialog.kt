@@ -573,7 +573,7 @@ class StockerManagementDialog(val project: Project?) : DialogWrapper(project) {
 
                         myApplication.schedule()
                     }
-                    com.vermouthx.stocker.views.windows.StockerToolWindow.refreshGroupButtons()
+                    com.vermouthx.stocker.views.windows.StockerToolWindow.refreshGroupButtons(project)
                     super.actionPerformed(e)
                 }
             }, cancelAction

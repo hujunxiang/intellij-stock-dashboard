@@ -45,15 +45,20 @@ object StockerNotification {
         return if (isChinese()) """
             <div style="${Styles.CONTAINER}">
                 <p style="${Styles.PARAGRAPH}">🎉 <strong>欢迎使用 StockerPlus v${v}！本次更新内容：</strong></p>
+                <h4 style="${Styles.HEADING}">✨ v${v} 新功能</h4>
+                <ul style="margin: 0; padding-left: 18px;">
+                    <li style="${Styles.LIST_ITEM}">✨ <strong>新功能</strong>
+                        <ul style="${Styles.SUB_LIST}">
+                            <li>支持批量添加股票（中文名称），支持顿号`、`或空格分隔</li>
+                            <li>双击编辑器空白处可切换显示/隐藏 StockerPlus 插件工具栏</li>
+                        </ul>
+                    </li>
+                </ul>
                 <h4 style="${Styles.HEADING}">🐛 v${v} 修复</h4>
                 <ul style="margin: 0; padding-left: 18px;">
                     <li style="${Styles.LIST_ITEM}">🐛 <strong>修复</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>修复取消分组、删除操作导致跨分组删除的问题</li>
-                            <li>修复批量导入时因股票存在于其他分组而无法添加到当前分组的问题</li>
-                            <li>修复插件启动时未分组股票也被显示的问题</li>
-                            <li>修复"全部"视图下右键菜单错误显示分组相关操作的问题</li>
-                            <li>修复建议对话框"全部"视图删除后分组引用残留的问题</li>
+                            <li>修复同时打开多个IDEA时，在一个IDEA中操作StockerPlus导致其他IDEA中StockerPlus无响应的问题</li>
                         </ul>
                     </li>
                 </ul>
@@ -61,15 +66,20 @@ object StockerNotification {
         """.trimIndent() else """
             <div style="${Styles.CONTAINER}">
                 <p style="${Styles.PARAGRAPH}">🎉 <strong>Welcome to StockerPlus v${v}! Here's what's new:</strong></p>
+                <h4 style="${Styles.HEADING}">✨ New Features in v${v}</h4>
+                <ul style="margin: 0; padding-left: 18px;">
+                    <li style="${Styles.LIST_ITEM}">✨ <strong>New Features</strong>
+                        <ul style="${Styles.SUB_LIST}">
+                            <li>Added batch add stocks by Chinese names, supports `、` (Chinese comma) or space separator</li>
+                            <li>Added double-click on editor empty area to toggle StockerPlus tool window</li>
+                        </ul>
+                    </li>
+                </ul>
                 <h4 style="${Styles.HEADING}">🐛 Bug Fixes in v${v}</h4>
                 <ul style="margin: 0; padding-left: 18px;">
                     <li style="${Styles.LIST_ITEM}">🐛 <strong>Bug Fixes</strong>
                         <ul style="${Styles.SUB_LIST}">
-                            <li>Fixed cross-group deletion when using Ungroup / Delete on stocks in multiple groups</li>
-                            <li>Fixed batch import skipping stocks that exist in other groups</li>
-                            <li>Fixed initial table view showing ungrouped stocks</li>
-                            <li>Fixed right-click menu showing group-scoped actions in "All" view</li>
-                            <li>Fixed stale group references after deleting from "All" view in suggestion dialog</li>
+                            <li>Fixed StockerPlus becoming unresponsive in other IDEA instances after operating in one</li>
                         </ul>
                     </li>
                 </ul>

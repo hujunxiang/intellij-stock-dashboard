@@ -53,9 +53,9 @@ public class StockerActionUtil {
         return true;
     }
 
-    public static boolean removeStock(StockerMarketType market, StockerSuggestion suggest) {
+    public static boolean removeStock(StockerMarketType market, StockerSuggestion suggest, Project project) {
         StockerSetting setting = StockerSetting.Companion.getInstance();
-        MessageBus messageBus = ApplicationManager.getApplication().getMessageBus();
+        MessageBus messageBus = project.getMessageBus();
         setting.removeCode(market, suggest.getCode());
         StockerQuoteDeleteNotifier publisher = null;
         switch (market) {

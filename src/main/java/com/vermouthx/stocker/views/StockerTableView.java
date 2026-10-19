@@ -775,7 +775,7 @@ public class StockerTableView implements Disposable {
             }
         } else {
             // Viewing "All" or no filter: full removal from market list
-            StockerActionUtil.removeStock(market, new StockerSuggestion(code, name == null ? code : name, market));
+            StockerActionUtil.removeStock(market, new StockerSuggestion(code, name == null ? code : name, market), project);
         }
         clearPopupTarget();
     }

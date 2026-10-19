@@ -3,6 +3,7 @@ package com.vermouthx.stocker.actions
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.diagnostic.Logger
 import com.vermouthx.stocker.StockerAppManager
 import com.vermouthx.stocker.StockerBundle
 import com.vermouthx.stocker.views.windows.StockerToolWindow
@@ -22,12 +23,19 @@ class StockerRestartAction : AnAction(
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
-        StockerToolWindow.rebuildTabs()
-        StockerAppManager.restart(project)
+        try {
+            val project = e.project ?: return
+            StockerToolWindow.rebuildTabs(project)
+            StockerAppManager.restart(project)
+        } catch (ex: Exception) {
+            log.warn("StockerRestartAction failed", ex)
+            try { StockerAppManager.myApplication(e.project)?.schedule() } catch (_: Exception) {}
+        }
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread {
         return ActionUpdateThread.BGT
     }
+
+    private val log = Logger.getInstance(javaClass)
 }

@@ -30,3 +30,6 @@ gen
 AGENTS.md
 CLAUDE.md
 .claude
+
+# WorkBuddy project data
+.workbuddy/

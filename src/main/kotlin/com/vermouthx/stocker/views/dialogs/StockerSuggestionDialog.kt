@@ -224,22 +224,37 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
     }
 
     private fun isBatchInput(text: String): Boolean {
-        // Contains commas → definitely batch
-        if (text.contains(",")) return true
-        // Contains spaces and each token looks like a stock code → batch
-        val tokens = text.trim().split("\\s+".toRegex())
+        // Contains commas (English or Chinese) → definitely batch
+        if (text.contains(",") || text.contains("、")) return true
+        // Split by any separator (space, comma, Chinese comma)
+        val tokens = text.trim().split("[\\s,、]+".toRegex()).filter { it.isNotEmpty() }
         if (tokens.size >= 2) {
             val codePattern = Regex("(?i)^(sh|sz|bj)?\\d{5,6}$|^[A-Z]{2,6}(USD|USDT)$")
-            return tokens.all { codePattern.matches(it.trim()) }
+            // Batch if all tokens are codes OR all tokens contain Chinese characters (stock names)
+            return tokens.all { codePattern.matches(it.trim()) } ||
+                    tokens.all { containsChinese(it) }
         }
         return false
     }
 
     private fun parseBatchCodes(text: String): List<String> {
-        // Split by commas or spaces
-        return text.trim().split("[,\\s]+".toRegex())
+        // Split by commas (English/Chinese) or whitespace
+        return text.trim().split("[\\s,、]+".toRegex())
             .map { it.trim() }
             .filter { it.isNotEmpty() }
+    }
+
+    private fun containsChinese(text: String): Boolean {
+        return text.any { char ->
+            val ub = Character.UnicodeBlock.of(char)
+            ub === Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS ||
+                    ub === Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS ||
+                    ub === Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A ||
+                    ub === Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B ||
+                    ub === Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION ||
+                    ub === Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS ||
+                    ub === Character.UnicodeBlock.GENERAL_PUNCTUATION
+        }
     }
 
     private fun normalizeCode(raw: String): Pair<StockerMarketType, String> {
@@ -270,34 +285,41 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
         val groupName = selectedGroup ?: setting.lastSelectedGroup.takeIf { it.isNotEmpty() }
 
         for (raw in rawCodes) {
-            val (market, normalizedCode) = normalizeCode(raw)
             try {
-                if (setting.containsCode(normalizedCode)) {
-                    if (groupName != null && setting.stockGroupNames.contains(groupName) && !setting.getGroupStocks(groupName).contains(normalizedCode)) {
-                        setting.assignStockToGroup(normalizedCode, groupName)
+                // Detect whether the token is a Chinese stock name or a code
+                if (containsChinese(raw)) {
+                    // Look up the code by Chinese name via the suggestion API
+                    val suggestionResult = lookupChineseName(raw, groupName)
+                    results.add(BatchResult(raw, suggestionResult.market, suggestionResult.code, suggestionResult.success, suggestionResult.message))
+                } else {
+                    val (market, normalizedCode) = normalizeCode(raw)
+                    if (setting.containsCode(normalizedCode)) {
+                        if (groupName != null && setting.stockGroupNames.contains(groupName) && !setting.getGroupStocks(groupName).contains(normalizedCode)) {
+                            setting.assignStockToGroup(normalizedCode, groupName)
+                            results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.add.success")))
+                        } else {
+                            results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.already.exists")))
+                        }
+                        continue
+                    }
+                    // Validate via HTTP
+                    val provider = if (market == StockerMarketType.Crypto) {
+                        setting.cryptoQuoteProvider
+                    } else {
+                        setting.quoteProvider
+                    }
+                    val valid = StockerQuoteHttpUtil.validateCode(market, provider, normalizedCode)
+                    if (valid) {
+                        val suggest = StockerSuggestion(normalizedCode, normalizedCode, market)
+                        StockerActionUtil.addStock(market, suggest, project, groupName)
                         results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.add.success")))
                     } else {
-                        results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.already.exists")))
+                        results.add(BatchResult(raw, market, normalizedCode, false, StockerBundle.msg("batch.invalid.code")))
                     }
-                    continue
-                }
-                // Validate via HTTP
-                val provider = if (market == StockerMarketType.Crypto) {
-                    setting.cryptoQuoteProvider
-                } else {
-                    setting.quoteProvider
-                }
-                val valid = StockerQuoteHttpUtil.validateCode(market, provider, normalizedCode)
-                if (valid) {
-                    val suggest = StockerSuggestion(normalizedCode, normalizedCode, market)
-                    StockerActionUtil.addStock(market, suggest, project, groupName)
-                    results.add(BatchResult(raw, market, normalizedCode, true, StockerBundle.msg("batch.add.success")))
-                } else {
-                    results.add(BatchResult(raw, market, normalizedCode, false, StockerBundle.msg("batch.invalid.code")))
                 }
             } catch (e: Exception) {
                 log.warn("Batch import failed for $raw", e)
-                results.add(BatchResult(raw, market, normalizedCode, false, StockerBundle.msg("batch.validation.failed")))
+                results.add(BatchResult(raw, null, raw, false, StockerBundle.msg("batch.validation.failed")))
             }
         }
 
@@ -309,6 +331,46 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
         }
 
         return results
+    }
+
+    private data class NameLookupResult(
+        val market: StockerMarketType?,
+        val code: String,
+        val success: Boolean,
+        val message: String
+    )
+
+    private fun lookupChineseName(name: String, groupName: String?): NameLookupResult {
+        val provider = setting.quoteProvider
+        val marketTypeFilter = setOf(
+            StockerMarketType.AShare,
+            StockerMarketType.HKStocks,
+            StockerMarketType.USStocks
+        )
+        return try {
+            val suggestions = StockerSuggestHttpUtil.suggest(name, provider, marketTypeFilter)
+            // Find the best match: exact name match first, then first result
+            val match = suggestions.firstOrNull { it.name == name }
+                ?: suggestions.firstOrNull()
+            if (match != null) {
+                if (setting.containsCode(match.code)) {
+                    if (groupName != null && setting.stockGroupNames.contains(groupName) && !setting.getGroupStocks(groupName).contains(match.code)) {
+                        setting.assignStockToGroup(match.code, groupName)
+                        NameLookupResult(match.market, match.code, true, StockerBundle.msg("batch.add.success"))
+                    } else {
+                        NameLookupResult(match.market, match.code, true, StockerBundle.msg("batch.already.exists"))
+                    }
+                } else {
+                    StockerActionUtil.addStock(match.market, match, project, groupName)
+                    NameLookupResult(match.market, match.code, true, StockerBundle.msg("batch.add.success"))
+                }
+            } else {
+                NameLookupResult(null, name, false, StockerBundle.msg("batch.name.not.found"))
+            }
+        } catch (e: Exception) {
+            log.warn("Chinese name lookup failed for $name", e)
+            NameLookupResult(null, name, false, StockerBundle.msg("batch.validation.failed"))
+        }
     }
 
     private fun updateButtonText(button: JButton, suggestion: StockerSuggestion) {
@@ -436,12 +498,12 @@ class StockerSuggestionDialog(val project: Project?) : DialogWrapper(project) {
                                             // Remove from specific group only
                                             setting.removeStockFromGroup(suggestion.code, currentGroupForBtn)
                                             if (!setting.isInAnyGroup(suggestion.code)) {
-                                                StockerActionUtil.removeStock(suggestion.market, suggestion)
+                                                StockerActionUtil.removeStock(suggestion.market, suggestion, project)
                                             }
                                         } else {
                                             // "All" view: remove from all groups first, then market list
                                             setting.removeStockFromGroup(suggestion.code)
-                                            StockerActionUtil.removeStock(suggestion.market, suggestion)
+                                            StockerActionUtil.removeStock(suggestion.market, suggestion, project)
                                         }
                                         updateButtonText(actionButton, suggestion)
                                     }

@@ -124,8 +124,8 @@ class StockerImportAction : AnAction(
         }
 
         // Refresh UI
-        StockerToolWindow.refreshGroupButtons()
-        StockerToolWindow.rebuildTabs()
+        StockerToolWindow.refreshGroupButtons(project)
+        StockerToolWindow.rebuildTabs(project)
         val app = StockerAppManager.myApplication(project)
         app?.shutdownThenClear()
         app?.schedule()

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.5
+
+### ✨ New Features / 新功能
+
+- Added batch add stocks by Chinese names, supports `、` (Chinese comma) or space separator / 支持批量添加股票（中文名称），支持顿号`、`或空格分隔，例如：`金禄电子、骏亚科技` 或 `天津普林 嘉元科技`
+- Added double-click on editor empty area to toggle StockerPlus tool window / 双击编辑器空白处可切换显示/隐藏 StockerPlus 插件工具栏
+
+### 🐛 Bug Fixes / 修复
+
+- Fixed StockerPlus becoming unresponsive or rendering incorrectly in other project windows after operating in one / 修复同一 IDEA 打开多个项目窗口时，在任一项目中操作 StockerPlus 导致其他项目窗口无响应或界面渲染异常的问题（工具窗口状态按项目隔离，行情刷新走项目级消息总线，表格更新全部切换到 EDT 线程）
+
 ## 2.0.4
 
 ### ✨ New Features / 新功能

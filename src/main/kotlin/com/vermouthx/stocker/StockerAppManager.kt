@@ -30,7 +30,7 @@ object StockerAppManager {
 
     fun restart(project: Project) {
         myApplicationMap[project]?.shutdownThenClear()
-        val newApp = StockerApp()
+        val newApp = StockerApp(project)
         myApplicationMap[project] = newApp
         newApp.schedule()
     }
